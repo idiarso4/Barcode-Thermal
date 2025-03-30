@@ -1,158 +1,133 @@
-# Sistem Parkir Lokal RSI BNA
+# Sistem Parkir RSI BNA
 
-Sistem parkir lokal dengan kamera dan push button untuk RSI Banjarnegara.
+Sistem parkir otomatis dengan kamera CCTV dan printer thermal untuk RSI Banjarnegara.
 
 ## Fitur
 
-1. **Capture Otomatis**
-   - Mengambil gambar saat tombol ditekan
-   - Format nama file: TKT[tanggal][jam]_[nomor].jpg
-   - Resolusi gambar: 1920x1080
-
-2. **Manajemen File**
-   - Penyimpanan otomatis di folder capture_images
-   - Penomoran file berurutan
-   - Peringatan jika storage hampir penuh
-
-3. **Logging**
-   - Log aktivitas sistem
-   - Log error untuk troubleshooting
-   - Timestamp untuk setiap event
+- Capture gambar kendaraan otomatis menggunakan kamera CCTV Dahua
+- Cetak tiket parkir menggunakan printer thermal
+- Input menggunakan pushbutton
+- Penyimpanan data di database PostgreSQL
+- Antarmuka yang mudah digunakan
+- Logging sistem untuk monitoring dan troubleshooting
 
 ## Persyaratan Sistem
 
-### Hardware
-- Raspberry Pi/Komputer Linux
-- Webcam/Kamera USB (mendukung 1080p)
-- Push Button
-- Kabel jumper
+- Windows 10/11
+- Python 3.8+
+- PostgreSQL Database Server
+- Kamera CCTV Dahua (RTSP support)
+- Printer Thermal (EPSON TM-T82X atau kompatibel)
+- Arduino dengan pushbutton
 
-### Software
-- Python 3.7+
-- OpenCV
-- RPi.GPIO
+## Persyaratan Python
+
+```
+opencv-python
+numpy
+pyserial
+psycopg2
+requests
+pywin32
+```
+
+## Konfigurasi
+
+1. Salin `config.ini.example` ke `config.ini`
+2. Sesuaikan konfigurasi berikut:
+
+```ini
+[camera]
+rtsp_url = rtsp://admin:password@ip_address:554/cam/realmonitor?channel=1&subtype=0
+
+[database]
+host = localhost
+port = 5432
+dbname = parkir2
+user = postgres
+password = your_password
+
+[serial]
+port = COM7
+baudrate = 9600
+```
 
 ## Instalasi
 
-1. **Update sistem**:
+1. Clone repository:
 ```bash
-sudo apt-get update
-sudo apt-get upgrade
+git clone https://github.com/idiarso4/Barcode-Thermal.git
+cd Barcode-Thermal
 ```
 
-2. **Install dependencies sistem**:
+2. Install dependencies:
 ```bash
-sudo apt-get install -y python3-opencv
-sudo apt-get install -y python3-rpi.gpio
+pip install -r requirements.txt
 ```
 
-3. **Clone repository**:
+3. Setup database:
 ```bash
-git clone [URL_REPO]
-cd parking_system
+python db_test.py
 ```
 
-4. **Install Python dependencies**:
+4. Jalankan aplikasi:
 ```bash
-pip3 install -r requirements.txt
+python parking_camera_windows.py
 ```
 
-5. **Buat folder untuk gambar**:
-```bash
-mkdir capture_images
-```
+## Penggunaan
 
-6. **Set permission**:
-```bash
-sudo chmod -R 777 capture_images
-sudo chmod +x parking_camera.py
-```
+1. Pastikan semua perangkat terhubung:
+   - Kamera CCTV dapat diakses melalui RTSP
+   - Printer thermal terpasang dan diset sebagai default printer
+   - Arduino dengan pushbutton terhubung ke port serial yang benar
 
-## Koneksi Hardware
+2. Jalankan aplikasi:
+   - Program akan mendeteksi kamera, printer, dan pushbutton secara otomatis
+   - Status koneksi akan ditampilkan di console
+   - Sistem siap menerima input dari pushbutton
 
-### Push Button
-```
-Push Button -> Raspberry Pi
-GND        -> Pin GND
-Signal     -> GPIO 18 (Pin 12)
-VCC        -> 3.3V (Pin 1)
-```
-
-### Kamera
-- Hubungkan kamera ke port USB
-- Pastikan kamera terdeteksi:
-```bash
-ls /dev/video*
-```
-
-## Menjalankan Program
-
-1. **Mode normal**:
-```bash
-python3 parking_camera.py
-```
-
-2. **Mode debug** (dengan output lengkap):
-```bash
-python3 parking_camera.py 2> debug.log
-```
+3. Proses parkir:
+   - Tekan pushbutton untuk memulai proses
+   - Sistem akan mengambil gambar dari kamera
+   - Tiket parkir akan dicetak otomatis
+   - Data disimpan ke database
 
 ## Troubleshooting
 
-### 1. Kamera Tidak Terdeteksi
-```bash
-# Cek device kamera
-ls /dev/video*
+### Kamera tidak terdeteksi
+- Periksa koneksi jaringan ke kamera
+- Pastikan URL RTSP benar
+- Periksa username dan password kamera
 
-# Cek permission
-sudo usermod -a -G video $USER
+### Printer tidak berfungsi
+- Pastikan printer terhubung dan menyala
+- Set printer sebagai default printer Windows
+- Periksa ketersediaan kertas
+- Restart aplikasi jika diperlukan
+
+### Pushbutton tidak merespon
+- Periksa koneksi kabel Arduino
+- Pastikan port COM yang benar di config.ini
+- Periksa baudrate (default: 9600)
+
+## Struktur Direktori
+
 ```
-
-### 2. Push Button Tidak Berespons
-```bash
-# Cek GPIO
-gpio readall
-
-# Test GPIO manual
-python3 -c "import RPi.GPIO as GPIO; GPIO.setmode(GPIO.BCM); GPIO.setup(18, GPIO.IN, pull_up_down=GPIO.PUD_UP); print(GPIO.input(18))"
+├── parking_camera_windows.py    # Program utama
+├── config.ini                   # File konfigurasi
+├── requirements.txt             # Dependency Python
+├── db_test.py                  # Setup database
+├── capture_images/             # Folder penyimpanan gambar
+└── logs/                       # File log sistem
 ```
-
-### 3. Error Permission
-```bash
-# Set permission folder
-sudo chmod -R 777 capture_images
-
-# Set permission program
-sudo chmod +x parking_camera.py
-```
-
-## Maintenance
-
-### Backup Data
-```bash
-# Backup manual
-cp -r capture_images /path/to/backup
-
-# Backup otomatis (tambahkan ke crontab)
-0 1 * * * rsync -av /path/to/capture_images /path/to/backup
-```
-
-### Pembersihan Storage
-```bash
-# Cek storage
-df -h .
-
-# Hapus file lama (lebih dari 30 hari)
-find capture_images -type f -mtime +30 -delete
-```
-
-## Support
-
-Jika mengalami masalah:
-- Log file: `parking.log`
-- Debug mode: Jalankan dengan `2> debug.log`
-- Kontak support: [NOMOR_SUPPORT]
 
 ## Lisensi
 
-Copyright © 2024 RSI Banjarnegara 
+Copyright © 2024 RSI Banjarnegara. All rights reserved.
+
+## Kontak
+
+Untuk bantuan dan informasi lebih lanjut:
+- Email: support@rsibna.com
+- Telepon: (0286) 123456 
