@@ -177,11 +177,18 @@ class ParkingButton:
                 server_data = self._get_ticket_from_server(plate_number, vehicle_type)
                 
                 if server_data:
-                    logger.info(f"Got ticket from server: {server_data}")
+                    # Convert server response to match our format
+                    ticket_data = {
+                        'plat': server_data['plat'],
+                        'jenis': server_data['jenis'],
+                        'tiket': server_data.get('ticket', server_data.get('tiket')),  # Handle both keys
+                        'waktu_masuk': server_data['waktu']
+                    }
+                    logger.info(f"Got ticket from server: {ticket_data}")
                     # Print ticket
-                    if self._print_ticket(server_data):
+                    if self._print_ticket(ticket_data):
                         print(f"✅ Kendaraan {plate_number} berhasil masuk")
-                        print(f"✅ Tiket dicetak: {server_data['ticket']}")
+                        print(f"✅ Tiket dicetak: {ticket_data['tiket']}")
                         return
             
             # Fallback to offline mode

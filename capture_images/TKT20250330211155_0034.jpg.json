@@ -1,0 +1,13 @@
+{
+    "filename": "TKT20250330211155_0034.jpg",
+    "timestamp": "2025-03-30T21:11:56.322481",
+    "resolution": {
+        "width": 1920,
+        "height": 1080,
+        "channels": 3
+    },
+    "camera_info": {
+        "ip": "192.168.2.20",
+        "connection_status": {
+            "is_connected": true,
+            "last_connected": 

@@ -1,5 +1,4 @@
 @echo off
-cd /d %~dp0
-echo Starting Parking System...
-python getin_client.py
+echo Starting Parking Client Application...
+python parking_client.py
 pause 

@@ -23,25 +23,28 @@ wheels/
 
 # Logs
 *.log
-parking_client.log
+parking.log
 
-# Local configuration
-counter.txt
+# Image captures
+captures/
+images/
 
-# IDE
-.vscode/
+# Database
+*.sqlite3
+*.db
+
+# Environment variables
+.env
+
+# IDE specific files
 .idea/
+.vscode/
 *.swp
 *.swo
 
-# Environment
-.env
-venv/
-ENV/
-
-# Windows
+# Windows specific
 Thumbs.db
-Desktop.ini
+desktop.ini
 
-# Counter file backup
-counter_backup.txt 
+# Counter file
+counter.txt 

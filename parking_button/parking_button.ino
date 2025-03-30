@@ -4,12 +4,10 @@ const int relayPin = 3;     // Relay connected to digital pin 3 (untuk palang/ga
 const int ledPin = 13;      // Built-in LED for status indication
 
 // Variables
-bool buttonState = HIGH;    // Current state of the button (HIGH with pull-up)
+bool buttonState = HIGH;     // Current state of the button (HIGH with pull-up)
 bool lastButtonState = HIGH; // Previous state of the button
-bool systemEnabled = true;  // System state flag
 unsigned long lastDebounceTime = 0;  // Last time the button state changed
 unsigned long debounceDelay = 50;    // Debounce delay in milliseconds
-unsigned long buttonPressCount = 0;   // Count button presses for debugging
 
 void setup() {
   // Initialize Serial communication
@@ -24,18 +22,19 @@ void setup() {
   digitalWrite(relayPin, LOW);
   digitalWrite(ledPin, LOW);
   
+  // Blink LED twice to indicate ready
+  for(int i=0; i<2; i++) {
+    digitalWrite(ledPin, HIGH);
+    delay(100);
+    digitalWrite(ledPin, LOW);
+    delay(100);
+  }
+  
   // Send startup message
   Serial.println("READY");
 }
 
 void loop() {
-  if (!systemEnabled) {
-    // If system is disabled, just blink LED and check for enable command
-    blinkLED();
-    checkSerialCommand();
-    return;
-  }
-  
   // Read the current state of the button
   bool reading = digitalRead(buttonPin);
   
@@ -56,17 +55,11 @@ void loop() {
     }
   }
   
-  // Check for serial commands
-  checkSerialCommand();
-  
   // Update the last button state
   lastButtonState = reading;
 }
 
 void handleButtonPress() {
-  // Increment press counter
-  buttonPressCount++;
-  
   // Visual feedback
   digitalWrite(ledPin, HIGH);
   
@@ -74,41 +67,15 @@ void handleButtonPress() {
   digitalWrite(relayPin, HIGH);
   
   // Send signal to computer
-  Serial.println("PRESS");
+  Serial.println("1");
   
-  // Keep gate open for 1 second
-  delay(1000);
+  // Keep gate open for 500ms
+  delay(500);
   
   // Close gate and turn off LED
   digitalWrite(relayPin, LOW);
   digitalWrite(ledPin, LOW);
-}
-
-void checkSerialCommand() {
-  if (Serial.available() > 0) {
-    String command = Serial.readStringUntil('\n');
-    command.trim();
-    
-    if (command == "DISABLE") {
-      systemEnabled = false;
-      digitalWrite(ledPin, HIGH);  // LED on indicates disabled state
-      Serial.println("DISABLED");
-    }
-    else if (command == "ENABLE") {
-      systemEnabled = true;
-      digitalWrite(ledPin, LOW);   // LED off indicates enabled state
-      Serial.println("ENABLED");
-    }
-    else if (command == "STATUS") {
-      Serial.print("Status: ");
-      Serial.println(systemEnabled ? "ENABLED" : "DISABLED");
-      Serial.print("Button presses: ");
-      Serial.println(buttonPressCount);
-    }
-  }
-}
-
-void blinkLED() {
-  // Blink LED when system is disabled
-  digitalWrite(ledPin, (millis() / 500) % 2);
+  
+  // Additional delay to prevent multiple triggers
+  delay(200);
 } 

@@ -52,11 +52,7 @@ class ParkingAPI:
             # Prepare request data with all necessary fields
             data = {
                 "plat": plate_number,
-                "jenis": vehicle_type,
-                "IsParked": True,
-                "IsLost": False,
-                "IsPaid": False,
-                "IsValid": True
+                "jenis": vehicle_type
             }
             
             logger.info(f"Sending request to {self.base_url}/api/masuk with data: {json.dumps(data)}")
@@ -79,34 +75,63 @@ class ParkingAPI:
                         return True, {
                             'plat': ticket_data.get('plat'),
                             'jenis': ticket_data.get('jenis'),
-                            'tiket': ticket_data.get('ticket'),  # Note: API returns 'ticket', we use 'tiket'
+                            'tiket': ticket_data.get('TicketNumber'),  # Server returns 'TicketNumber'
                             'waktu_masuk': ticket_data.get('waktu')
                         }
                     else:
                         error_msg = result.get('message', 'Unknown error')
                         logger.error(f"API returned error: {error_msg}")
-                        return False, {'error': error_msg}
+                        # Fallback to offline mode
+                        return self._handle_offline_entry(plate_number, vehicle_type)
                 except json.JSONDecodeError:
                     logger.error("Failed to parse JSON response")
-                    return False, {'error': 'Invalid JSON response'}
-            elif response.status_code == 400:
-                logger.error("Invalid request data")
-                return False, {'error': 'Data tidak valid'}
-            elif response.status_code == 500:
-                logger.error("Server error")
-                return False, {'error': 'Error server'}
+                    # Fallback to offline mode
+                    return self._handle_offline_entry(plate_number, vehicle_type)
             else:
                 logger.error(f"API request failed with status {response.status_code}")
-                return False, {'error': f'API request failed with status {response.status_code}'}
+                # Fallback to offline mode
+                return self._handle_offline_entry(plate_number, vehicle_type)
                 
         except requests.exceptions.ConnectionError:
             error_msg = "Failed to connect to server"
             logger.error(error_msg)
-            return False, {'error': error_msg}
+            # Fallback to offline mode
+            return self._handle_offline_entry(plate_number, vehicle_type)
         except Exception as e:
             error_msg = f"Unexpected error: {str(e)}"
             logger.error(error_msg)
-            return False, {'error': error_msg}
+            # Fallback to offline mode
+            return self._handle_offline_entry(plate_number, vehicle_type)
+            
+    def _handle_offline_entry(self, plate_number, vehicle_type):
+        """Handle vehicle entry in offline mode"""
+        try:
+            # Generate offline ticket number
+            counter_file = "counter.txt"
+            counter = 1
+            
+            if os.path.exists(counter_file):
+                with open(counter_file, "r") as f:
+                    counter = int(f.read().strip())
+            
+            # Format: OFF0001, OFF0002, etc.
+            ticket_number = f"OFF{counter:04d}"
+            
+            # Increment counter and save
+            counter = (counter % 9999) + 1  # Reset at 9999
+            with open(counter_file, "w") as f:
+                f.write(str(counter))
+            
+            # Return offline ticket data
+            return True, {
+                'plat': plate_number,
+                'jenis': vehicle_type,
+                'tiket': ticket_number,
+                'waktu_masuk': datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+        except Exception as e:
+            logger.error(f"Error in offline mode: {e}")
+            return False, {'error': str(e)}
     
     def get_vehicles(self):
         """Get list of parked vehicles"""
