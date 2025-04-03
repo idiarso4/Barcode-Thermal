@@ -294,8 +294,14 @@ Last Connected: {self.connection_status['last_connected']}
                     if response:
                         logger.info(f"Koneksi serial ke pushbutton berhasil di port {button_config['port']}")
                         print(f"✅ Pushbutton terhubung di port {button_config['port']}")
+                        self.button_mode = "serial"
+                        return
                     else:
-                        raise Exception("Tidak ada respons dari perangkat")
+                        print("⚠️ Tidak ada respons dari perangkat, menggunakan mode simulasi")
+                        self.button_mode = "simulation"
+                        if hasattr(self, 'button'):
+                            self.button.close()
+                        return
                         
                 except serial.SerialException as e:
                     if "PermissionError" in str(e):
@@ -316,33 +322,53 @@ Last Connected: {self.connection_status['last_connected']}
                                     response = self.button.readline().decode().strip()
                                     if response:
                                         print(f"✅ Pushbutton ditemukan di port {test_port}")
+                                        self.button_mode = "serial"
                                         return
                                 except:
                                     continue
                     else:
                         print(f"\n⚠️ Gagal koneksi ke port {button_config['port']}: {str(e)}")
-                    raise Exception(f"Gagal koneksi ke pushbutton: {str(e)}")
+                    
+                    # Jika semua port gagal, gunakan mode simulasi
+                    print("⚠️ Tidak dapat terhubung ke pushbutton, menggunakan mode simulasi keyboard")
+                    self.button_mode = "simulation"
+                    return
             else:
-                raise Exception(f"Tipe button {button_config['type']} tidak didukung")
+                # Mode selain serial, gunakan simulasi
+                print("⚠️ Mode pushbutton tidak dikenali, menggunakan mode simulasi keyboard")
+                self.button_mode = "simulation"
+                return
                 
         except Exception as e:
-            logger.error(f"Gagal setup pushbutton: {str(e)}")
-            raise Exception(f"Gagal setup pushbutton: {str(e)}")
+            logger.error(f"Setup pushbutton warning: {str(e)}")
+            print("⚠️ Menggunakan mode simulasi keyboard untuk pushbutton")
+            self.button_mode = "simulation"
 
     def check_button(self):
         """Cek status pushbutton"""
         try:
-            if self.button.in_waiting:
-                data = self.button.readline().decode().strip()
-                try:
-                    # Coba parse sebagai angka (untuk kompatibilitas dengan kode lama)
-                    counter = int(data)
-                    return True
-                except ValueError:
-                    # Jika bukan angka, cek apakah "1" (untuk kompatibilitas dengan kode baru)
-                    if data == "1":
+            if self.button_mode == "serial":
+                if self.button.in_waiting:
+                    data = self.button.readline().decode().strip()
+                    try:
+                        # Coba parse sebagai angka (untuk kompatibilitas dengan kode lama)
+                        counter = int(data)
                         return True
-            return False
+                    except ValueError:
+                        # Jika bukan angka, cek apakah "1" (untuk kompatibilitas dengan kode baru)
+                        if data == "1":
+                            return True
+                return False
+            elif self.button_mode == "simulation":
+                # Mode simulasi - cek keyboard
+                import msvcrt
+                if msvcrt.kbhit():
+                    key = msvcrt.getch()
+                    # Jika user menekan spasi atau enter
+                    if key in [b' ', b'\r']:
+                        print("⚠️ Tombol keyboard terdeteksi sebagai pengganti pushbutton")
+                        return True
+                return False
         except Exception as e:
             logger.error(f"Error membaca pushbutton: {str(e)}")
             return False
@@ -388,26 +414,62 @@ Last Connected: {self.connection_status['last_connected']}
 
             # Format tiket dengan ESC/POS commands
             timestamp = datetime.now()
-            ticket_text = (
-                b"\x1B\x40" +          # Initialize printer
-                b"\x1B\x61\x01" +      # Center alignment
-                b"RSI BANJARNEGARA\n" +
-                b"TIKET PARKIR\n" +
-                b"--------------------------------\n" +
-                b"\x1B\x61\x00" +      # Left alignment
-                f"Tanggal : {timestamp.strftime('%d-%m-%Y')}\n".encode() +
-                f"Jam     : {timestamp.strftime('%H:%M:%S')}\n".encode() +
-                f"No.     : {filename.replace('.jpg','')}\n".encode() +
-                b"--------------------------------\n" +
-                b"\x1B\x61\x01" +      # Center alignment
-                b"Terima Kasih\n" +
-                b"Simpan Tiket Anda\n" +
-                b"\n\n" +              # Extra lines for spacing
-                b"\x1D\x56\x41\x00"    # Auto-cut command
-            )
-
-            # Kirim data ke printer
-            win32print.WritePrinter(printer_handle, ticket_text)
+            ticket_number = filename.replace('.jpg','')
+            
+            # Jika tiket panjang, gunakan versi pendek untuk barcode
+            barcode_ticket = ticket_number
+            if len(ticket_number) > 15 and ticket_number.startswith("TKT"):
+                barcode_ticket = ticket_number[-10:]
+            
+            # Kombinasikan semua perintah dalam satu bytearray
+            commands = bytearray()
+            
+            # Initialize printer
+            commands.extend(b"\x1B\x40")  # ESC @ - Initialize printer
+            
+            # Center alignment
+            commands.extend(b"\x1B\x61\x01")  # ESC a 1 - Center alignment
+            
+            # Header text
+            commands.extend(b"\x1B\x21\x30")  # Double width/height
+            commands.extend("RSI BANJARNEGARA\n".encode())
+            commands.extend(b"\x1B\x21\x00")  # Normal font
+            commands.extend("TIKET PARKIR\n".encode())
+            commands.extend("--------------------------------\n".encode())
+            
+            # Left alignment untuk detail tiket
+            commands.extend(b"\x1B\x61\x00")  # ESC a 0 - Left alignment
+            
+            # Details
+            commands.extend(f"Tanggal : {timestamp.strftime('%d-%m-%Y')}\n".encode())
+            commands.extend(f"Jam     : {timestamp.strftime('%H:%M:%S')}\n".encode())
+            commands.extend(f"No.     : {ticket_number}\n".encode())
+            commands.extend("--------------------------------\n\n".encode())
+            
+            # Center untuk barcode
+            commands.extend(b"\x1B\x61\x01")  # Center alignment
+            
+            # Barcode info
+            commands.extend(b"\x1D\x68\x50")  # GS h 80 - Barcode height 80 dots
+            commands.extend(b"\x1D\x77\x02")  # GS w 2 - Barcode width multiplier (2)
+            commands.extend(b"\x1D\x48\x02")  # GS H 2 - HRI below barcode
+            
+            # Print barcode type CODE39
+            commands.extend(b"\x1D\x6B\x04")  # GS k 4 - CODE39 barcode
+            commands.append(len(barcode_ticket))  # Length byte
+            commands.extend(barcode_ticket.encode('ascii'))  # Barcode data
+            
+            # Footer
+            commands.extend(b"\n\n")
+            commands.extend(b"\x1B\x61\x01")  # Center alignment
+            commands.extend("Terima Kasih\n".encode())
+            commands.extend("Simpan Tiket Anda\n\n\n".encode())
+            
+            # Cut paper
+            commands.extend(b"\x1D\x56\x42")  # GS V B - Cut paper
+            
+            # Kirim semua data ke printer
+            win32print.WritePrinter(printer_handle, commands)
 
             # Selesaikan job printing
             win32print.EndPagePrinter(printer_handle)

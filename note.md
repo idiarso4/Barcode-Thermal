@@ -165,10 +165,7 @@ commands.extend([
 - Tidak perlu NUL terminator untuk CODE39
 - Pastikan ada line feed (`\n\n`) setelah barcode
 
-## Format Tiket
-- Format offline: `OFF000001` dst
-- Format online: sesuai dari server
-- CODE39 bisa membaca kedua format tersebut
+
 
 ## Troubleshooting
 Jika barcode tidak muncul:
@@ -176,3 +173,40 @@ Jika barcode tidak muncul:
 2. Jangan ubah format CODE39 ke format lain
 3. Pastikan data tidak melebihi batas panjang
 4. Cek apakah printer mendukung command yang dikirim
+
+# Ticket Format Support
+
+Sistem parkir saat ini mendukung format tiket server (TKT* format) dengan baik. Beberapa fitur:
+
+1. **Tiket Format Server**: Sistem mendukung format tiket panjang dengan prefiks TKT, misalnya: `TKT202503290219527426`
+   - Untuk barcode, sistem menggunakan 10 digit terakhir untuk menyederhanakan pembacaan barcode
+   - Tiket yang dicetak menampilkan nomor tiket lengkap di bagian atas
+
+2. **Cara Testing**:
+   - Menggunakan `python parking_direct_print.py` - Pilih opsi 2 untuk test format TKT
+   - Menggunakan `python parking_client_simple.py --test-server-ticket` untuk test langsung
+
+3. **Implementasi ESC/POS**:
+   - Menggunakan win32print untuk akses printer secara langsung
+   - Kompatibel dengan printer EPSON TM-T82X Receipt
+   - Implementasi barcode menggunakan CODE39
+
+4. **Mode Operasi**:
+   - Koneksi ke server API untuk mengambil data tiket aktual
+   - Mendukung mode Arduino (produksi) atau mode simulasi (testing)
+
+## Contoh Format
+
+Server memberikan format tiket: `TKT202503290219527426`
+
+## Troubleshooting
+
+Jika ada masalah cetak:
+1. Pastikan printer dalam keadaan online dan kertas tersedia
+2. Cek koneksi port serial Arduino pada COM7
+3. Coba reset printer atau restart aplikasi
+4. Gunakan mode test untuk memverifikasi fungsi printer
+
+## Pemeliharaan
+
+Program telah diupdate untuk mendukung format tiket server, dan akan terus bekerja dengan baik dalam production environment.
