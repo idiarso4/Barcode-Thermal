@@ -131,3 +131,64 @@ Copyright © 2024 RSI Banjarnegara. All rights reserved.
 Untuk bantuan dan informasi lebih lanjut:
 - Email: support@rsibna.com
 - Telepon: (0286) 123456 
+
+## Printer Commands (ESC/POS)
+
+### Barcode Printing Sequence
+Urutan perintah untuk mencetak barcode pada printer EPSON TM-T82X:
+
+1. Set posisi HRI (Human Readable Interpretation) di bawah barcode:
+   ```
+   \x1D\x48\x02
+   ```
+
+2. Set tinggi barcode (80 dots):
+   ```
+   \x1D\x68\x50
+   ```
+
+3. Set lebar barcode (multiplier 2):
+   ```
+   \x1D\x77\x02
+   ```
+
+4. Center alignment untuk barcode:
+   ```
+   \x1B\x61\x01
+   ```
+
+5. Pilih tipe barcode CODE128:
+   ```
+   \x1D\x6B\x49
+   ```
+
+6. Kirim panjang data barcode:
+   ```
+   bytes([len(ticket_number)])
+   ```
+
+7. Kirim data barcode:
+   ```
+   ticket_number.encode()
+   ```
+
+8. Kirim terminator NUL:
+   ```
+   \x00
+   ```
+
+9. Tambah line feeds:
+   ```
+   \n\n
+   ```
+
+### Known Issues
+- [ ] Barcode tidak muncul pada tiket meskipun urutan perintah sudah benar
+- [x] Printer terdeteksi dan dapat mencetak teks
+- [x] Format tiket sudah sesuai dengan kebutuhan
+
+### Troubleshooting
+1. Pastikan printer EPSON TM-T82X mendukung barcode CODE128
+2. Cek apakah data barcode yang dikirim valid (tidak mengandung karakter khusus)
+3. Verifikasi bahwa semua perintah ESC/POS diterima dengan benar oleh printer
+4. Pastikan tidak ada konflik dengan pengaturan printer lainnya 

@@ -1,0 +1,18 @@
+{
+    "filename": "TKT20250403185501_0068.jpg",
+    "timestamp": "2025-04-03 18:55:01",
+    "resolution": {
+        "width": 1920,
+        "height": 1080,
+        "channels": 3
+    },
+    "camera_info": {
+        "ip": "192.168.2.20",
+        "connection_status": {
+            "is_connected": true,
+            "last_connected": "2025-04-03 18:55:01",
+            "reconnect_attempts": 0,
+            "current_url": "rtsp://admin:%40dminparkir@192.168.2.20:554/cam/realmonitor?channel=1&subtype=0"
+        }
+    }
+}

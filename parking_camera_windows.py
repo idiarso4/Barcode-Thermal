@@ -375,51 +375,107 @@ Last Connected: {self.connection_status['last_connected']}
             self.printer_available = False
 
     def print_ticket(self, filename):
-        """Cetak tiket parkir menggunakan win32print"""
-        if not self.printer_available:
-            logger.info("Melewati pencetakan tiket - printer tidak tersedia")
-            return
-
+        """Cetak tiket dengan barcode"""
         try:
-            # Buka koneksi ke printer
-            printer_handle = win32print.OpenPrinter(self.printer_name)
-            job_id = win32print.StartDocPrinter(printer_handle, 1, ("Tiket Parkir", None, "RAW"))
-            win32print.StartPagePrinter(printer_handle)
-
-            # Format tiket dengan ESC/POS commands
-            timestamp = datetime.now()
-            ticket_text = (
-                b"\x1B\x40" +          # Initialize printer
-                b"\x1B\x61\x01" +      # Center alignment
-                b"RSI BANJARNEGARA\n" +
-                b"TIKET PARKIR\n" +
-                b"--------------------------------\n" +
-                b"\x1B\x61\x00" +      # Left alignment
-                f"Tanggal : {timestamp.strftime('%d-%m-%Y')}\n".encode() +
-                f"Jam     : {timestamp.strftime('%H:%M:%S')}\n".encode() +
-                f"No.     : {filename.replace('.jpg','')}\n".encode() +
-                b"--------------------------------\n" +
-                b"\x1B\x61\x01" +      # Center alignment
-                b"Terima Kasih\n" +
-                b"Simpan Tiket Anda\n" +
-                b"\n\n" +              # Extra lines for spacing
-                b"\x1D\x56\x41\x00"    # Auto-cut command
-            )
-
-            # Kirim data ke printer
-            win32print.WritePrinter(printer_handle, ticket_text)
-
-            # Selesaikan job printing
-            win32print.EndPagePrinter(printer_handle)
-            win32print.EndDocPrinter(printer_handle)
-            win32print.ClosePrinter(printer_handle)
+            if not self.printer_available:
+                print("❌ Printer tidak tersedia")
+                return
+                
+            # Parse data dari filename
+            ticket_number = filename.replace('.jpg', '')
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            logger.info(f"Tiket berhasil dicetak: {filename}")
+            print(f"\nMencetak tiket:")
+            print(f"Nomor: {ticket_number}")
+            print(f"Waktu: {timestamp}")
+            
+            # Buka printer
+            try:
+                printer_handle = win32print.OpenPrinter(self.printer_name)
+                print("✅ Berhasil membuka koneksi printer")
+            except Exception as e:
+                print(f"❌ Gagal membuka printer: {str(e)}")
+                return
+                
+            try:
+                # Start document
+                job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
+                win32print.StartPagePrinter(printer_handle)
+                
+                # Initialize printer
+                win32print.WritePrinter(printer_handle, b"\x1B\x40")  # ESC @ - Initialize printer
+                
+                # Header
+                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
+                win32print.WritePrinter(printer_handle, b"\x1B\x21\x30")  # Double width + height + bold
+                win32print.WritePrinter(printer_handle, b"=== PARKIR RSI BNA ===\n")
+                win32print.WritePrinter(printer_handle, b"\x1B\x21\x00")  # Normal text
+                
+                # Ticket details
+                win32print.WritePrinter(printer_handle, f"Tiket: {ticket_number}\n".encode())
+                win32print.WritePrinter(printer_handle, f"Waktu: {timestamp}\n".encode())
+                
+                # Tambah spasi sebelum barcode
+                win32print.WritePrinter(printer_handle, b"\n")
+                
+                # Urutan perintah barcode yang benar:
+                # 1. Set posisi HRI di bawah barcode
+                win32print.WritePrinter(printer_handle, b"\x1D\x48\x02")  # HRI below barcode
+                
+                # 2. Set tinggi barcode (80 dots)
+                win32print.WritePrinter(printer_handle, b"\x1D\x68\x50")  # Barcode height = 80 dots
+                
+                # 3. Set lebar barcode (multiplier 2)
+                win32print.WritePrinter(printer_handle, b"\x1D\x77\x02")  # Barcode width = 2
+                
+                # 4. Center alignment untuk barcode
+                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")
+                
+                # 5. Pilih tipe barcode CODE128
+                win32print.WritePrinter(printer_handle, b"\x1D\x6B\x49")  # Select CODE128
+                
+                # 6. Kirim panjang data barcode
+                win32print.WritePrinter(printer_handle, bytes([len(ticket_number)]))
+                
+                # 7. Kirim data barcode
+                win32print.WritePrinter(printer_handle, ticket_number.encode())
+                
+                # 8. Kirim terminator NUL
+                win32print.WritePrinter(printer_handle, b"\x00")
+                
+                # 9. Tambah line feeds
+                win32print.WritePrinter(printer_handle, b"\n\n")
+                
+                # Footer
+                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center align
+                win32print.WritePrinter(printer_handle, b"Terima kasih\n")
+                win32print.WritePrinter(printer_handle, b"Jangan hilangkan tiket ini\n")
+                
+                # Feed paper and cut
+                win32print.WritePrinter(printer_handle, b"\x1B\x64\x05")  # Feed 5 lines
+                win32print.WritePrinter(printer_handle, b"\x1D\x56\x41\x00")  # Cut paper
+                
+                print("✅ Berhasil mengirim data ke printer")
+                
+                # Close printer
+                win32print.EndPagePrinter(printer_handle)
+                win32print.EndDocPrinter(printer_handle)
+                
+            except Exception as e:
+                print(f"❌ Gagal mengirim data ke printer: {str(e)}")
+                raise
+            finally:
+                try:
+                    win32print.ClosePrinter(printer_handle)
+                    print("✅ Koneksi printer ditutup")
+                except:
+                    pass
+            
             print("✅ Tiket berhasil dicetak")
             
         except Exception as e:
-            logger.error(f"Gagal mencetak tiket: {str(e)}")
-            print(f"❌ Gagal mencetak tiket: {str(e)}")
+            logger.error(f"Error printing ticket: {str(e)}")
+            print(f"❌ Error saat mencetak tiket: {str(e)}")
 
     def setup_database(self):
         """Setup koneksi ke database PostgreSQL"""
