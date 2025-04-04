@@ -41,6 +41,10 @@ class ParkingCamera:
             'camera_type': 'Dahua'
         }
         
+        # Tambahkan state untuk debounce
+        self.last_button_press = 0
+        self.debounce_delay = 10.0  # 10 detik delay antara press
+        
         # Buat folder jika belum ada
         if not os.path.exists(self.capture_dir):
             os.makedirs(self.capture_dir)
@@ -286,6 +290,10 @@ Last Connected: {self.connection_status['last_connected']}
                     # Tunggu Arduino siap
                     time.sleep(2)
                     
+                    # Bersihkan buffer
+                    self.button.reset_input_buffer()
+                    self.button.reset_output_buffer()
+                    
                     # Test koneksi dengan mengirim perintah
                     self.button.write(b'test\n')
                     time.sleep(0.1)
@@ -294,6 +302,7 @@ Last Connected: {self.connection_status['last_connected']}
                     if response:
                         logger.info(f"Koneksi serial ke pushbutton berhasil di port {button_config['port']}")
                         print(f"✅ Pushbutton terhubung di port {button_config['port']}")
+                        print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
                     else:
                         raise Exception("Tidak ada respons dari perangkat")
                         
@@ -316,6 +325,7 @@ Last Connected: {self.connection_status['last_connected']}
                                     response = self.button.readline().decode().strip()
                                     if response:
                                         print(f"✅ Pushbutton ditemukan di port {test_port}")
+                                        print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
                                         return
                                 except:
                                     continue
@@ -330,18 +340,35 @@ Last Connected: {self.connection_status['last_connected']}
             raise Exception(f"Gagal setup pushbutton: {str(e)}")
 
     def check_button(self):
-        """Cek status pushbutton"""
+        """Cek status pushbutton dengan debounce dan toleransi"""
         try:
             if self.button.in_waiting:
-                data = self.button.readline().decode().strip()
-                try:
-                    # Coba parse sebagai angka (untuk kompatibilitas dengan kode lama)
-                    counter = int(data)
-                    return True
-                except ValueError:
-                    # Jika bukan angka, cek apakah "1" (untuk kompatibilitas dengan kode baru)
-                    if data == "1":
+                # Baca semua data yang tersedia di buffer
+                data = self.button.read_all().decode().strip()
+                current_time = time.time()
+                
+                # Debug log
+                if data:
+                    logger.debug(f"Data tombol diterima: {repr(data)}")
+                
+                # Cek apakah sudah melewati waktu debounce
+                if current_time - self.last_button_press >= self.debounce_delay:
+                    # Cek berbagai kemungkinan input yang valid
+                    if any(x in data for x in ['1', 'true', 'True', 'HIGH']):
+                        self.last_button_press = current_time
+                        logger.info("Tombol terdeteksi dengan benar")
                         return True
+                    else:
+                        # Jika ada data tapi tidak valid, mungkin tombol belum ditekan cukup kuat
+                        if data:
+                            print("⚠️ Tombol terdeteksi tapi tidak cukup kuat, tekan lebih lama")
+                            logger.warning(f"Tombol terdeteksi tapi data tidak valid: {repr(data)}")
+                else:
+                    # Jika masih dalam masa debounce, tampilkan sisa waktu
+                    remaining = self.debounce_delay - (current_time - self.last_button_press)
+                    if data:  # Hanya tampilkan jika ada aktivitas tombol
+                        print(f"⏳ Mohon tunggu {remaining:.1f} detik lagi...")
+                        
             return False
         except Exception as e:
             logger.error(f"Error membaca pushbutton: {str(e)}")
@@ -569,8 +596,6 @@ Status: Menunggu input dari pushbutton...
             while True:
                 if self.check_button():  # Pushbutton ditekan
                     self.process_button_press()
-                    # Delay untuk debounce
-                    time.sleep(0.5)
                 
                 # Delay kecil untuk mengurangi CPU usage
                 time.sleep(0.05)
