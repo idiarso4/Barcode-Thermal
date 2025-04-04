@@ -163,10 +163,52 @@ class ParkingCamera:
                 print("❌ Gagal mengambil gambar")
                 return False, None
 
-            # Generate nama file
+            # Resize gambar untuk menghemat memori (70% dari ukuran asli)
+            scale_percent = 70
+            width = int(frame.shape[1] * scale_percent / 100)
+            height = int(frame.shape[0] * scale_percent / 100)
+            frame = cv2.resize(frame, (width, height))
+
+            # Hapus timestamp kamera dengan menutup area timestamp
+            # Cari area putih di bagian bawah (timestamp kamera biasanya putih)
+            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+            _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+            
+            # Fokus pada bagian bawah gambar
+            bottom_region = thresh[int(height * 0.85):, :]
+            
+            # Jika ditemukan area putih yang signifikan, tutup dengan rectangle hitam
+            if np.mean(bottom_region) > 50:  # Jika rata-rata pixel > 50, ada area putih
+                y_start = int(height * 0.85)
+                cv2.rectangle(frame, (0, y_start), (width, height), (0, 0, 0), -1)
+
+            # Tambahkan timestamp Windows yang akurat
+            current_time = datetime.now()
+            timestamp_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
+            
+            # Tambah timestamp dengan background hitam untuk keterbacaan
+            text_size = cv2.getTextSize(timestamp_str, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
+            text_x = 10
+            text_y = height - 10
+            
+            # Gambar background hitam untuk teks
+            cv2.rectangle(frame, 
+                        (text_x - 5, text_y + 5), 
+                        (text_x + text_size[0] + 5, text_y - text_size[1] - 5), 
+                        (0, 0, 0), 
+                        -1)
+            
+            # Gambar teks timestamp dengan outline putih untuk keterbacaan lebih baik
+            # Draw outline
+            cv2.putText(frame, timestamp_str, (text_x-1, text_y-1),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 3)
+            # Draw text
+            cv2.putText(frame, timestamp_str, (text_x, text_y),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+
+            # Generate nama file dengan waktu Windows yang akurat
             counter = self.get_counter()
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = f"TKT{timestamp}_{counter:04d}.jpg"
+            filename = f"TKT{current_time.strftime('%Y%m%d%H%M%S')}_{counter:04d}.jpg"
             
             # Cek apakah gambar cukup berbeda dengan sebelumnya
             if self.check_similar_images and self.last_image is not None:
@@ -175,15 +217,16 @@ class ParkingCamera:
                     print("ℹ️ Kemungkinan kendaraan yang sama, skip capture")
                     return False, None
 
-            # Simpan gambar
+            # Simpan gambar dengan kompresi yang lebih tinggi
             filepath = os.path.join(self.config['storage']['capture_dir'], filename)
-            cv2.imwrite(filepath, frame)
+            cv2.imwrite(filepath, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
             
             # Update last image dan timestamp
             self.last_image = frame.copy()
-            self.last_capture_time = datetime.now()
+            self.last_capture_time = current_time
             
             print(f"✅ Gambar disimpan: {filename}")
+            logger.info(f"Gambar disimpan dengan timestamp Windows: {timestamp_str}")
             return True, filename
 
         except Exception as e:
@@ -384,6 +427,7 @@ Last Connected: {self.connection_status['last_connected']}
                     remaining = self.debounce_delay - (current_time - self.last_button_press)
                     if data:  # Hanya tampilkan jika ada aktivitas tombol
                         print(f"⏳ Mohon tunggu {remaining:.1f} detik lagi...")
+                        logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
                         
             return False
         except Exception as e:
@@ -464,8 +508,8 @@ Last Connected: {self.connection_status['last_connected']}
                 win32print.WritePrinter(printer_handle, b"\x1B\x40")  # Initialize printer
                 win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
                 
-                # Header - double height only
-                win32print.WritePrinter(printer_handle, b"\x1B\x21\x10")  # Double height only
+                # Header - double height & width
+                win32print.WritePrinter(printer_handle, b"\x1B\x21\x30")  # Double width & height
                 win32print.WritePrinter(printer_handle, b"RSI BANJARNEGARA\n")
                 win32print.WritePrinter(printer_handle, b"TIKET PARKIR\n")
                 win32print.WritePrinter(printer_handle, b"\x1B\x21\x00")  # Normal text
@@ -477,13 +521,10 @@ Last Connected: {self.connection_status['last_connected']}
                 win32print.WritePrinter(printer_handle, f"Waktu : {timestamp}\n".encode())
                 win32print.WritePrinter(printer_handle, b"================================\n")
                 
-                # Extra space before barcode
-                win32print.WritePrinter(printer_handle, b"\n")
-                
                 # Barcode section - optimized for thermal printer
                 win32print.WritePrinter(printer_handle, b"\x1D\x48\x02")  # HRI below barcode
-                win32print.WritePrinter(printer_handle, b"\x1D\x68\x64")  # Barcode height = 100 dots (12.5mm)
-                win32print.WritePrinter(printer_handle, b"\x1D\x77\x03")  # Barcode width = 3 (thicker)
+                win32print.WritePrinter(printer_handle, b"\x1D\x68\x50")  # Barcode height = 80 dots
+                win32print.WritePrinter(printer_handle, b"\x1D\x77\x02")  # Barcode width = 2
                 win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
                 
                 # Use CODE39 with clear format
@@ -511,18 +552,13 @@ Last Connected: {self.connection_status['last_connected']}
                 # Close printer
                 win32print.EndPagePrinter(printer_handle)
                 win32print.EndDocPrinter(printer_handle)
+                win32print.ClosePrinter(printer_handle)
+                
+                print("✅ Tiket berhasil dicetak")
                 
             except Exception as e:
                 print(f"❌ Gagal mengirim data ke printer: {str(e)}")
                 raise
-            finally:
-                try:
-                    win32print.ClosePrinter(printer_handle)
-                    print("✅ Koneksi printer ditutup")
-                except:
-                    pass
-            
-            print("✅ Tiket berhasil dicetak")
             
         except Exception as e:
             logger.error(f"Error printing ticket: {str(e)}")
@@ -572,30 +608,59 @@ Last Connected: {self.connection_status['last_connected']}
 
     def process_button_press(self):
         """Proses ketika tombol ditekan - ambil gambar, cetak tiket, dan simpan ke database"""
-        print("\nMemproses... Mohon tunggu...")
-        print("1. Mengambil gambar...")
-        
-        # Ambil gambar
-        success, filename = self.capture_image()
-        
-        if success:
-            print("2. Menyimpan ke database...")
-            # Simpan ke database
-            ticket_number = filename.replace('.jpg', '')
-            image_path = os.path.join(self.config['storage']['capture_dir'], filename)
-            self.save_to_database(ticket_number, image_path)
+        try:
+            # Tambah delay kecil untuk stabilisasi
+            time.sleep(0.5)  # Delay 0.5 detik untuk stabilisasi kamera
             
-            # Cetak tiket jika printer tersedia
-            print(f"3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
-            if self.printer_available:
-                print("4. Mencoba cetak tiket...")
-                self.print_ticket(filename)
+            print("\nMemproses... Mohon tunggu...")
+            print("1. Mengambil gambar...")
+            logger.info("Mulai proses capture gambar")
+            
+            # Cek apakah ada capture yang masih diproses
+            current_time = time.time()
+            if hasattr(self, 'last_capture_time') and self.last_capture_time:
+                time_since_last = current_time - self.last_capture_time
+                if time_since_last < 2:  # Minimal 2 detik antara capture
+                    print("⚠️ Terlalu cepat! Mohon tunggu...")
+                    logger.warning(f"Capture terlalu cepat, interval: {time_since_last:.1f}s")
+                    return
+            
+            # Ambil beberapa frame untuk stabilisasi
+            for _ in range(3):  # Ambil 3 frame untuk stabilisasi
+                self.camera.read()
+            
+            # Ambil gambar
+            success, filename = self.capture_image()
+            
+            if success:
+                print("2. Menyimpan ke database...")
+                # Simpan ke database
+                ticket_number = filename.replace('.jpg', '')
+                image_path = os.path.join(self.config['storage']['capture_dir'], filename)
+                self.save_to_database(ticket_number, image_path)
+                
+                # Update timestamp capture terakhir
+                self.last_capture_time = current_time
+                
+                # Cetak tiket jika printer tersedia
+                print(f"3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
+                if self.printer_available:
+                    print("4. Mencoba cetak tiket...")
+                    self.print_ticket(filename)
+                else:
+                    print("❌ Printer tidak tersedia, tiket tidak bisa dicetak")
+                
+                # Tambah delay setelah proses selesai
+                time.sleep(0.5)  # Delay 0.5 detik setelah proses
+                print("Status: Menunggu input berikutnya...")
+                logger.info("Proses capture selesai dengan sukses")
             else:
-                print("❌ Printer tidak tersedia, tiket tidak bisa dicetak")
-            
-            print("Status: Menunggu input berikutnya...")
-        else:
-            print("❌ Gagal mengambil gambar!")
+                print("❌ Gagal mengambil gambar!")
+                logger.error("Gagal melakukan capture gambar")
+                
+        except Exception as e:
+            logger.error(f"Error dalam process_button_press: {str(e)}")
+            print(f"❌ Error saat memproses: {str(e)}")
 
     def cleanup(self):
         """Bersihkan resources"""
