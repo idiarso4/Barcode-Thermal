@@ -1,7 +1,7 @@
 import cv2
 import time
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 import shutil
 import requests
@@ -65,6 +65,11 @@ class ParkingCamera:
         # Load counter
         self.load_counter()
         
+        self.last_image = None
+        self.last_capture_time = None
+        self.min_image_diff = 0.15  # Turunkan ke 15% perbedaan
+        self.check_similar_images = False  # Nonaktifkan pengecekan gambar yang mirip
+        
         logger.info("Sistem parkir berhasil diinisialisasi")
 
     def setup_camera(self):
@@ -124,55 +129,66 @@ class ParkingCamera:
             logger.error(f"Gagal setup kamera: {str(e)}")
             raise Exception(f"Gagal setup kamera: {str(e)}")
 
-    def capture_image(self):
-        """Ambil gambar dari kamera dan simpan"""
+    def images_are_different(self, img1, img2):
+        """
+        Membandingkan dua gambar untuk menentukan apakah objek berbeda
+        Returns: True jika gambar cukup berbeda (kendaraan berbeda)
+        """
         try:
-            # Cek storage sebelum capture
-            if not self.check_storage():
-                raise Exception("Storage penuh!")
-                
-            # Increment counter
-            self.counter += 1
+            # Convert ke grayscale
+            gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
+            gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
+
+            # Hitung perbedaan
+            diff = cv2.absdiff(gray1, gray2)
             
-            # Generate nama file
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            filename = f"TKT{timestamp}_{str(self.counter).zfill(4)}.jpg"
-            filepath = os.path.join(self.capture_dir, filename)
-            
-            # Ambil beberapa frame untuk stabilisasi
-            for _ in range(3):
-                ret, frame = self.camera.read()
-                if not ret:
-                    raise Exception("Gagal membaca frame dari kamera")
-                time.sleep(0.1)
-            
-            # Ambil dan simpan gambar
-            ret, frame = self.camera.read()
-            if ret and frame is not None:
-                # Simpan dengan kualitas sesuai konfigurasi
-                cv2.imwrite(filepath, frame, [cv2.IMWRITE_JPEG_QUALITY, int(self.config['image']['quality'])])
-                
-                logger.info(f"Gambar berhasil disimpan: {filename}")
-                print(f"\n✅ Gambar disimpan: {filename}")
-                
-                # Update status koneksi
-                self.connection_status.update({
-                    'is_connected': True,
-                    'last_connected': datetime.now()
-                })
-                
-                # Simpan metadata
-                self.save_metadata(filename, frame.shape)
-                
-                # Simpan counter baru
-                self.save_counter()
-                return True, filename
-            else:
-                logger.error("Gagal mengambil gambar dari kamera")
-                return False, None
-                
+            # Hitung persentase perbedaan
+            total_pixels = diff.shape[0] * diff.shape[1]
+            different_pixels = np.count_nonzero(diff > 30)  # threshold 30
+            difference_ratio = different_pixels / total_pixels
+
+            logger.info(f"Perbedaan gambar: {difference_ratio:.2%}")
+            return difference_ratio > self.min_image_diff
+
         except Exception as e:
-            logger.error(f"Error saat capture gambar: {str(e)}")
+            logger.error(f"Error comparing images: {str(e)}")
+            return True  # Jika error, anggap berbeda untuk safety
+
+    def capture_image(self):
+        """Ambil gambar dari kamera"""
+        try:
+            # Baca frame dari kamera
+            ret, frame = self.camera.read()
+            if not ret:
+                print("❌ Gagal mengambil gambar")
+                return False, None
+
+            # Generate nama file
+            counter = self.get_counter()
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            filename = f"TKT{timestamp}_{counter:04d}.jpg"
+            
+            # Cek apakah gambar cukup berbeda dengan sebelumnya
+            if self.check_similar_images and self.last_image is not None:
+                if not self.images_are_different(frame, self.last_image):
+                    print("ℹ️ Gambar terlalu mirip dengan capture sebelumnya")
+                    print("ℹ️ Kemungkinan kendaraan yang sama, skip capture")
+                    return False, None
+
+            # Simpan gambar
+            filepath = os.path.join(self.config['storage']['capture_dir'], filename)
+            cv2.imwrite(filepath, frame)
+            
+            # Update last image dan timestamp
+            self.last_image = frame.copy()
+            self.last_capture_time = datetime.now()
+            
+            print(f"✅ Gambar disimpan: {filename}")
+            return True, filename
+
+        except Exception as e:
+            logger.error(f"Error capturing image: {str(e)}")
+            print(f"❌ Error saat mengambil gambar: {str(e)}")
             return False, None
 
     def load_config(self):
@@ -384,6 +400,14 @@ Last Connected: {self.connection_status['last_connected']}
             try:
                 # Get default printer
                 self.printer_name = win32print.GetDefaultPrinter()
+                if not self.printer_name:
+                    print("❌ Tidak ada default printer yang diset")
+                    return
+                    
+                # Test printer
+                test_handle = win32print.OpenPrinter(self.printer_name)
+                win32print.ClosePrinter(test_handle)
+                
                 print(f"✅ Printer terdeteksi: {self.printer_name}")
                 self.printer_available = True
                 return
@@ -395,14 +419,21 @@ Last Connected: {self.connection_status['last_connected']}
                 print("2. Pastikan driver printer terinstall")
                 print("3. Pastikan printer diset sebagai default printer")
                 print("4. Pastikan printer menyala dan kertas tersedia")
+                print("5. Coba restart printer")
             
         except Exception as e:
             logger.error(f"Setup printer error: {str(e)}")
             print(f"\n❌ Setup printer error: {str(e)}")
             self.printer_available = False
 
+    def get_counter(self):
+        """Get dan increment counter"""
+        self.counter += 1
+        self.save_counter()
+        return self.counter
+
     def print_ticket(self, filename):
-        """Cetak tiket dengan barcode"""
+        """Cetak tiket dengan barcode CODE39"""
         try:
             if not self.printer_available:
                 print("❌ Printer tidak tersedia")
@@ -430,55 +461,48 @@ Last Connected: {self.connection_status['last_connected']}
                 win32print.StartPagePrinter(printer_handle)
                 
                 # Initialize printer
-                win32print.WritePrinter(printer_handle, b"\x1B\x40")  # ESC @ - Initialize printer
-                
-                # Header
+                win32print.WritePrinter(printer_handle, b"\x1B\x40")  # Initialize printer
                 win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
-                win32print.WritePrinter(printer_handle, b"\x1B\x21\x30")  # Double width + height + bold
-                win32print.WritePrinter(printer_handle, b"=== PARKIR RSI BNA ===\n")
+                
+                # Header - double height only
+                win32print.WritePrinter(printer_handle, b"\x1B\x21\x10")  # Double height only
+                win32print.WritePrinter(printer_handle, b"RSI BANJARNEGARA\n")
+                win32print.WritePrinter(printer_handle, b"TIKET PARKIR\n")
                 win32print.WritePrinter(printer_handle, b"\x1B\x21\x00")  # Normal text
+                win32print.WritePrinter(printer_handle, b"================================\n")
                 
-                # Ticket details
-                win32print.WritePrinter(printer_handle, f"Tiket: {ticket_number}\n".encode())
-                win32print.WritePrinter(printer_handle, f"Waktu: {timestamp}\n".encode())
+                # Ticket details - left align, normal text
+                win32print.WritePrinter(printer_handle, b"\x1B\x61\x00")  # Left alignment
+                win32print.WritePrinter(printer_handle, f"Nomor : {ticket_number}\n".encode())
+                win32print.WritePrinter(printer_handle, f"Waktu : {timestamp}\n".encode())
+                win32print.WritePrinter(printer_handle, b"================================\n")
                 
-                # Tambah spasi sebelum barcode
+                # Extra space before barcode
                 win32print.WritePrinter(printer_handle, b"\n")
                 
-                # Urutan perintah barcode yang benar:
-                # 1. Set posisi HRI di bawah barcode
+                # Barcode section - optimized for thermal printer
                 win32print.WritePrinter(printer_handle, b"\x1D\x48\x02")  # HRI below barcode
+                win32print.WritePrinter(printer_handle, b"\x1D\x68\x64")  # Barcode height = 100 dots (12.5mm)
+                win32print.WritePrinter(printer_handle, b"\x1D\x77\x03")  # Barcode width = 3 (thicker)
+                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
                 
-                # 2. Set tinggi barcode (80 dots)
-                win32print.WritePrinter(printer_handle, b"\x1D\x68\x50")  # Barcode height = 80 dots
+                # Use CODE39 with clear format
+                win32print.WritePrinter(printer_handle, b"\x1D\x6B\x04")  # Select CODE39
                 
-                # 3. Set lebar barcode (multiplier 2)
-                win32print.WritePrinter(printer_handle, b"\x1D\x77\x02")  # Barcode width = 2
+                # Simplify ticket number for better scanning
+                simple_number = ticket_number.split('_')[1]  # Ambil hanya nomor urut
+                barcode_data = f"*{simple_number}*".encode()  # Format CODE39
+                win32print.WritePrinter(printer_handle, barcode_data)
                 
-                # 4. Center alignment untuk barcode
-                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")
-                
-                # 5. Pilih tipe barcode CODE128
-                win32print.WritePrinter(printer_handle, b"\x1D\x6B\x49")  # Select CODE128
-                
-                # 6. Kirim panjang data barcode
-                win32print.WritePrinter(printer_handle, bytes([len(ticket_number)]))
-                
-                # 7. Kirim data barcode
-                win32print.WritePrinter(printer_handle, ticket_number.encode())
-                
-                # 8. Kirim terminator NUL
-                win32print.WritePrinter(printer_handle, b"\x00")
-                
-                # 9. Tambah line feeds
+                # Extra space after barcode
                 win32print.WritePrinter(printer_handle, b"\n\n")
                 
-                # Footer
-                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center align
+                # Footer - center align
+                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
                 win32print.WritePrinter(printer_handle, b"Terima kasih\n")
                 win32print.WritePrinter(printer_handle, b"Jangan hilangkan tiket ini\n")
                 
-                # Feed paper and cut
+                # Feed and cut
                 win32print.WritePrinter(printer_handle, b"\x1B\x64\x05")  # Feed 5 lines
                 win32print.WritePrinter(printer_handle, b"\x1D\x56\x41\x00")  # Cut paper
                 
@@ -549,19 +573,25 @@ Last Connected: {self.connection_status['last_connected']}
     def process_button_press(self):
         """Proses ketika tombol ditekan - ambil gambar, cetak tiket, dan simpan ke database"""
         print("\nMemproses... Mohon tunggu...")
+        print("1. Mengambil gambar...")
         
         # Ambil gambar
         success, filename = self.capture_image()
         
         if success:
+            print("2. Menyimpan ke database...")
             # Simpan ke database
             ticket_number = filename.replace('.jpg', '')
             image_path = os.path.join(self.config['storage']['capture_dir'], filename)
             self.save_to_database(ticket_number, image_path)
             
             # Cetak tiket jika printer tersedia
+            print(f"3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
             if self.printer_available:
+                print("4. Mencoba cetak tiket...")
                 self.print_ticket(filename)
+            else:
+                print("❌ Printer tidak tersedia, tiket tidak bisa dicetak")
             
             print("Status: Menunggu input berikutnya...")
         else:
