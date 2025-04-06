@@ -43,7 +43,7 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 10.0  # 10 detik delay antara press
+        self.debounce_delay = 0.5  # Ubah dari 10.0 menjadi 0.5 detik delay antara press
         
         # Buat folder jika belum ada
         if not os.path.exists(self.capture_dir):
@@ -75,6 +75,24 @@ class ParkingCamera:
     def setup_camera(self):
         """Setup koneksi ke kamera Dahua menggunakan RTSP"""
         try:
+            # Nonaktifkan kamera dan gunakan dummy camera sementara
+            print("\nMelewati inisialisasi kamera (mode dummy)...")
+            print("✅ Mode dummy kamera aktif - tidak melakukan capture gambar sungguhan")
+            logger.info("Kamera dilewati - menggunakan dummy mode")
+            
+            # Setup dummy camera untuk testing
+            self.camera = None
+            self.connection_status.update({
+                'is_connected': True,
+                'last_connected': datetime.now(),
+                'reconnect_attempts': 0,
+                'current_url': 'dummy://camera'
+            })
+            
+            return
+            
+            # Kode koneksi kamera asli (dinonaktifkan sementara)
+            """
             camera_config = self.config['camera']
             
             # Format RTSP URL untuk Dahua
@@ -123,6 +141,7 @@ class ParkingCamera:
                     continue
             
             raise Exception("Tidak dapat terhubung ke kamera dengan semua URL yang dicoba")
+            """
                 
         except Exception as e:
             self.connection_status['is_connected'] = False
@@ -155,83 +174,57 @@ class ParkingCamera:
             return True  # Jika error, anggap berbeda untuk safety
 
     def capture_image(self):
-        """Ambil gambar dari kamera"""
+        """Ambil gambar dari kamera (dummy mode)"""
         try:
-            # Baca frame dari kamera
-            ret, frame = self.camera.read()
-            if not ret:
-                print("❌ Gagal mengambil gambar")
-                return False, None
-
-            # Resize gambar untuk menghemat memori (70% dari ukuran asli)
-            scale_percent = 70
-            width = int(frame.shape[1] * scale_percent / 100)
-            height = int(frame.shape[0] * scale_percent / 100)
-            frame = cv2.resize(frame, (width, height))
-
-            # Hapus timestamp kamera dengan menutup area timestamp
-            # Cari area putih di bagian bawah (timestamp kamera biasanya putih)
-            gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-            _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
+            # Buat dummy image karena kamera dinonaktifkan
+            print("✅ Menggunakan gambar dummy (tanpa kamera)")
             
-            # Fokus pada bagian bawah gambar
-            bottom_region = thresh[int(height * 0.85):, :]
-            
-            # Jika ditemukan area putih yang signifikan, tutup dengan rectangle hitam
-            if np.mean(bottom_region) > 50:  # Jika rata-rata pixel > 50, ada area putih
-                y_start = int(height * 0.85)
-                cv2.rectangle(frame, (0, y_start), (width, height), (0, 0, 0), -1)
-
-            # Tambahkan timestamp Windows yang akurat
-            current_time = datetime.now()
-            timestamp_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
-            
-            # Tambah timestamp dengan background hitam untuk keterbacaan
-            text_size = cv2.getTextSize(timestamp_str, cv2.FONT_HERSHEY_SIMPLEX, 0.7, 2)[0]
-            text_x = 10
-            text_y = height - 10
-            
-            # Gambar background hitam untuk teks
-            cv2.rectangle(frame, 
-                        (text_x - 5, text_y + 5), 
-                        (text_x + text_size[0] + 5, text_y - text_size[1] - 5), 
-                        (0, 0, 0), 
-                        -1)
-            
-            # Gambar teks timestamp dengan outline putih untuk keterbacaan lebih baik
-            # Draw outline
-            cv2.putText(frame, timestamp_str, (text_x-1, text_y-1),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (255, 255, 255), 3)
-            # Draw text
-            cv2.putText(frame, timestamp_str, (text_x, text_y),
-                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
-
             # Generate nama file dengan waktu Windows yang akurat
+            current_time = datetime.now()
             counter = self.get_counter()
             filename = f"TKT{current_time.strftime('%Y%m%d%H%M%S')}_{counter:04d}.jpg"
             
-            # Cek apakah gambar cukup berbeda dengan sebelumnya
-            if self.check_similar_images and self.last_image is not None:
-                if not self.images_are_different(frame, self.last_image):
-                    print("ℹ️ Gambar terlalu mirip dengan capture sebelumnya")
-                    print("ℹ️ Kemungkinan kendaraan yang sama, skip capture")
-                    return False, None
-
-            # Simpan gambar dengan kompresi yang lebih tinggi
+            # Buat file dummy kosong
             filepath = os.path.join(self.config['storage']['capture_dir'], filename)
-            cv2.imwrite(filepath, frame, [cv2.IMWRITE_JPEG_QUALITY, 85])
             
-            # Update last image dan timestamp
-            self.last_image = frame.copy()
-            self.last_capture_time = current_time
+            # Cek apakah OpenCV tersedia
+            try:
+                # Jika OpenCV tersedia, buat dummy image sederhana
+                height = 480
+                width = 640
+                dummy_image = np.zeros((height, width, 3), dtype=np.uint8)
+                
+                # Tambahkan background putih
+                dummy_image.fill(255)
+                
+                # Tambahkan timestamp ke gambar
+                timestamp_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
+                cv2.putText(dummy_image, "DUMMY IMAGE - NO CAMERA", (50, 50),
+                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+                cv2.putText(dummy_image, f"Ticket: {filename}", (50, 100),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+                cv2.putText(dummy_image, timestamp_str, (50, 150),
+                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+                
+                # Simpan dummy image
+                cv2.imwrite(filepath, dummy_image)
+                
+                # Update last image untuk konsistensi
+                self.last_image = dummy_image.copy()
+                
+            except Exception as e:
+                # Jika OpenCV tidak dapat digunakan, buat file kosong saja
+                logger.warning(f"Tidak dapat membuat dummy image, menggunakan file kosong: {str(e)}")
+                with open(filepath, 'w') as f:
+                    f.write("Dummy image file")
             
-            print(f"✅ Gambar disimpan: {filename}")
-            logger.info(f"Gambar disimpan dengan timestamp Windows: {timestamp_str}")
+            print(f"✅ File dummy disimpan: {filename}")
+            logger.info(f"File dummy dibuat dengan timestamp: {current_time}")
             return True, filename
 
         except Exception as e:
-            logger.error(f"Error capturing image: {str(e)}")
-            print(f"❌ Error saat mengambil gambar: {str(e)}")
+            logger.error(f"Error creating dummy image: {str(e)}")
+            print(f"❌ Error saat membuat file dummy: {str(e)}")
             return False, None
 
     def load_config(self):
@@ -418,15 +411,16 @@ Last Connected: {self.connection_status['last_connected']}
                         logger.info("Tombol terdeteksi dengan benar")
                         return True
                     else:
-                        # Jika ada data tapi tidak valid, mungkin tombol belum ditekan cukup kuat
+                        # Jika ada data tapi tidak valid, coba proses juga
                         if data:
-                            print("⚠️ Tombol terdeteksi tapi tidak cukup kuat, tekan lebih lama")
-                            logger.warning(f"Tombol terdeteksi tapi data tidak valid: {repr(data)}")
+                            logger.info(f"Tombol terdeteksi dengan data tidak standar: {repr(data)}")
+                            self.last_button_press = current_time
+                            return True
                 else:
                     # Jika masih dalam masa debounce, tampilkan sisa waktu
                     remaining = self.debounce_delay - (current_time - self.last_button_press)
                     if data:  # Hanya tampilkan jika ada aktivitas tombol
-                        print(f"⏳ Mohon tunggu {remaining:.1f} detik lagi...")
+                        print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...\n")
                         logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
                         
             return False
@@ -610,9 +604,9 @@ Last Connected: {self.connection_status['last_connected']}
         """Proses ketika tombol ditekan - ambil gambar, cetak tiket, dan simpan ke database"""
         try:
             # Tambah delay kecil untuk stabilisasi
-            time.sleep(0.5)  # Delay 0.5 detik untuk stabilisasi kamera
+            time.sleep(0.2)  # Kurangi dari 0.5 detik menjadi 0.2 detik untuk stabilisasi kamera
             
-            print("\nMemproses... Mohon tunggu...")
+            print("\n\nMemproses... Mohon tunggu...\n")
             print("1. Mengambil gambar...")
             logger.info("Mulai proses capture gambar")
             
@@ -620,20 +614,22 @@ Last Connected: {self.connection_status['last_connected']}
             current_time = time.time()
             if hasattr(self, 'last_capture_time') and self.last_capture_time:
                 time_since_last = current_time - self.last_capture_time
-                if time_since_last < 2:  # Minimal 2 detik antara capture
-                    print("⚠️ Terlalu cepat! Mohon tunggu...")
+                if time_since_last < 1:  # Kurangi dari 2 menjadi 1 detik antara capture
+                    print("⚠️ Terlalu cepat! Mohon tunggu...\n")
                     logger.warning(f"Capture terlalu cepat, interval: {time_since_last:.1f}s")
                     return
             
-            # Ambil beberapa frame untuk stabilisasi
-            for _ in range(3):  # Ambil 3 frame untuk stabilisasi
-                self.camera.read()
+            # Jangan coba membaca frame jika kamera adalah None
+            if self.camera is not None:
+                # Ambil beberapa frame untuk stabilisasi
+                for _ in range(3):  # Ambil 3 frame untuk stabilisasi
+                    self.camera.read()
             
             # Ambil gambar
             success, filename = self.capture_image()
             
             if success:
-                print("2. Menyimpan ke database...")
+                print("\n2. Menyimpan ke database...")
                 # Simpan ke database
                 ticket_number = filename.replace('.jpg', '')
                 image_path = os.path.join(self.config['storage']['capture_dir'], filename)
@@ -643,34 +639,32 @@ Last Connected: {self.connection_status['last_connected']}
                 self.last_capture_time = current_time
                 
                 # Cetak tiket jika printer tersedia
-                print(f"3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
+                print(f"\n3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
                 if self.printer_available:
-                    print("4. Mencoba cetak tiket...")
+                    print("\n4. Mencoba cetak tiket...")
                     self.print_ticket(filename)
                 else:
-                    print("❌ Printer tidak tersedia, tiket tidak bisa dicetak")
+                    print("\n❌ Printer tidak tersedia, tiket tidak bisa dicetak")
                 
                 # Tambah delay setelah proses selesai
-                time.sleep(0.5)  # Delay 0.5 detik setelah proses
-                print("Status: Menunggu input berikutnya...")
+                time.sleep(0.2)  # Kurangi dari 0.5 detik menjadi 0.2 detik setelah proses
+                print("\n\nStatus: Menunggu input berikutnya...\n")
                 logger.info("Proses capture selesai dengan sukses")
             else:
-                print("❌ Gagal mengambil gambar!")
+                print("\n❌ Gagal mengambil gambar!\n")
                 logger.error("Gagal melakukan capture gambar")
                 
         except Exception as e:
             logger.error(f"Error dalam process_button_press: {str(e)}")
-            print(f"❌ Error saat memproses: {str(e)}")
+            print(f"\n❌ Error saat memproses: {str(e)}\n")
 
     def cleanup(self):
         """Bersihkan resources"""
         try:
-            if hasattr(self, 'camera'):
+            if hasattr(self, 'camera') and self.camera is not None:
                 self.camera.release()
             if hasattr(self, 'button'):
                 self.button.close()
-            if hasattr(self, 'printer'):
-                self.printer.close()
             if hasattr(self, 'db_conn'):
                 self.db_conn.close()
             logger.info("Cleanup berhasil")
@@ -683,8 +677,9 @@ Last Connected: {self.connection_status['last_connected']}
 ================================
     SISTEM PARKIR RSI BNA    
 ================================
-Mode: Pushbutton
+Mode: Pushbutton (Tanpa Kamera)
 Status: Menunggu input dari pushbutton...
+
         """)
         
         try:
