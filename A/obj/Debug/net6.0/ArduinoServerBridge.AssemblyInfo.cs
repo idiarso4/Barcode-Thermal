@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("ArduinoServerBridge")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7c0003e3df755e11f5299e5c8b653f480861eeba")]
 [assembly: System.Reflection.AssemblyProductAttribute("ArduinoServerBridge")]
 [assembly: System.Reflection.AssemblyTitleAttribute("ArduinoServerBridge")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
