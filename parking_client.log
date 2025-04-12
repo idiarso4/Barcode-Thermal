@@ -1,0 +1,572 @@
+2025-03-30 02:59:37,150 - ERROR - API connection test failed: 404
+2025-03-30 02:59:39,202 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 02:59:41,251 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 04:01:47,727 - INFO - Ticket printer initialized
+2025-03-30 04:01:49,774 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 04:01:49,775 - ERROR - Error getting vehicle count: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 04:02:14,042 - INFO - Ticket printer initialized
+2025-03-30 04:02:14,045 - INFO - Connecting to database at 192.168.2.6:5432
+2025-03-30 04:02:16,082 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 04:02:16,083 - ERROR - Connection details: host=192.168.2.6, port=5432, db=parkir2
+2025-03-30 04:02:16,083 - ERROR - Error getting vehicle count: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 13:22:01,419 - INFO - Ticket printer initialized
+2025-03-30 13:22:01,448 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 13:22:01,449 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 13:23:18,547 - INFO - Processing vehicle: RSI132318 (Mobil)
+2025-03-30 13:23:18,547 - INFO - Sending request to http://192.168.2.6:5051/api/masuk with data: {"plat": "RSI132318", "jenis": "Mobil"}
+2025-03-30 13:23:18,574 - INFO - Raw response: {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (49, RSI132318, Mobil, OFF0001, 1, null, null, null, 2025-03-30 13:23:18.39157, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 13:23:18,574 - ERROR - API request failed with status 500
+2025-03-30 13:23:18,574 - INFO - Using offline mode
+2025-03-30 13:23:18,756 - INFO - Ticket printed successfully
+2025-03-30 13:24:48,853 - INFO - Ticket printer initialized
+2025-03-30 13:24:48,882 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 13:24:48,883 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 13:25:04,261 - INFO - Processing vehicle: RSI132504 (Motor)
+2025-03-30 13:25:04,262 - INFO - Sending request to http://192.168.2.6:5051/api/masuk with data: {"plat": "RSI132504", "jenis": "Motor", "IsParked": true}
+2025-03-30 13:25:04,293 - INFO - Raw response: {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (50, RSI132504, Motor, OFF0001, 2, null, null, null, 2025-03-30 13:25:04.114347, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 13:25:04,293 - ERROR - API request failed with status 500
+2025-03-30 13:25:04,293 - INFO - Using offline mode
+2025-03-30 13:25:04,343 - INFO - Ticket printed successfully
+2025-03-30 13:26:02,223 - INFO - Ticket printer initialized
+2025-03-30 13:26:02,252 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 13:26:02,253 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 13:28:33,449 - INFO - Ticket printer initialized
+2025-03-30 13:28:33,481 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 13:28:33,482 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 14:42:36,582 - INFO - Ticket printer initialized
+2025-03-30 14:42:36,609 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 14:42:36,615 - INFO - Arduino connected successfully
+2025-03-30 14:42:36,615 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 14:42:38,249 - INFO - Processing vehicle: RSI144238 (Mobil)
+2025-03-30 14:42:38,344 - INFO - Using offline mode
+2025-03-30 14:42:38,498 - INFO - Ticket printed successfully
+2025-03-30 14:43:10,294 - INFO - Processing vehicle: RSI144310 (Mobil)
+2025-03-30 14:43:10,369 - INFO - Using offline mode
+2025-03-30 14:43:10,436 - INFO - Ticket printed successfully
+2025-03-30 14:49:46,105 - INFO - Ticket printer initialized
+2025-03-30 14:49:46,132 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 14:49:46,135 - INFO - Arduino connected successfully
+2025-03-30 14:49:46,135 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 14:49:47,767 - INFO - Processing vehicle: RSI144947 (Mobil)
+2025-03-30 14:49:47,863 - INFO - Using offline mode
+2025-03-30 14:49:47,932 - INFO - Ticket printed successfully
+2025-03-30 14:50:10,081 - INFO - Processing vehicle: RSI145010 (Motor)
+2025-03-30 14:50:10,164 - INFO - Using offline mode
+2025-03-30 14:50:10,221 - INFO - Ticket printed successfully
+2025-03-30 14:52:08,567 - INFO - Processing vehicle: RSI145208 (Motor)
+2025-03-30 14:52:08,624 - INFO - Using offline mode
+2025-03-30 14:52:08,695 - INFO - Ticket printed successfully
+2025-03-30 14:54:19,745 - INFO - Ticket printer initialized
+2025-03-30 14:54:19,771 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 14:54:19,773 - INFO - Arduino connected successfully
+2025-03-30 14:54:19,773 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 14:54:21,408 - INFO - Processing vehicle: RSI145421 (Motor)
+2025-03-30 14:54:21,503 - INFO - Using offline mode
+2025-03-30 14:54:21,567 - INFO - Ticket printed successfully
+2025-03-30 14:54:42,822 - INFO - Processing vehicle: RSI145442 (Motor)
+2025-03-30 14:54:42,908 - INFO - Using offline mode
+2025-03-30 14:54:42,973 - INFO - Ticket printed successfully
+2025-03-30 14:58:29,429 - INFO - Processing vehicle: RSI145829 (Mobil)
+2025-03-30 14:58:29,519 - INFO - Using offline mode
+2025-03-30 14:58:29,591 - INFO - Ticket printed successfully
+2025-03-30 14:59:52,209 - INFO - Ticket printer initialized
+2025-03-30 14:59:52,235 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 14:59:52,238 - INFO - Arduino connected successfully
+2025-03-30 14:59:52,239 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 14:59:53,868 - INFO - Processing vehicle: RSI145953 (Motor)
+2025-03-30 14:59:53,956 - INFO - Using offline mode
+2025-03-30 14:59:54,022 - INFO - Ticket printed successfully
+2025-03-30 15:00:18,720 - INFO - Processing vehicle: RSI150018 (Motor)
+2025-03-30 15:00:18,812 - INFO - Using offline mode
+2025-03-30 15:00:18,887 - INFO - Ticket printed successfully
+2025-03-30 15:04:01,082 - INFO - Ticket printer initialized
+2025-03-30 15:04:01,108 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 15:04:01,111 - INFO - Arduino connected successfully
+2025-03-30 15:04:01,111 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 15:04:02,741 - INFO - Processing vehicle: RSI150402 (Motor)
+2025-03-30 15:04:02,826 - INFO - Using offline mode
+2025-03-30 15:04:02,938 - INFO - Ticket printed successfully
+2025-03-30 15:05:22,369 - INFO - Processing vehicle: RSI150522 (Motor)
+2025-03-30 15:05:22,431 - INFO - Using offline mode
+2025-03-30 15:05:22,497 - INFO - Ticket printed successfully
+2025-03-30 15:07:14,216 - INFO - Processing vehicle: RSI150714 (Motor)
+2025-03-30 15:07:14,299 - INFO - Using offline mode
+2025-03-30 15:07:14,361 - INFO - Ticket printed successfully
+2025-03-30 15:12:51,290 - INFO - Processing vehicle: RSI151251 (Motor)
+2025-03-30 15:12:51,356 - INFO - Using offline mode
+2025-03-30 15:12:51,431 - INFO - Ticket printed successfully
+2025-03-30 15:26:36,495 - INFO - Ticket printer initialized
+2025-03-30 15:26:36,522 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 15:26:36,524 - INFO - Arduino connected successfully
+2025-03-30 15:26:36,524 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 15:26:38,153 - INFO - Processing vehicle: RSI152638 (Mobil)
+2025-03-30 15:26:38,235 - INFO - Using offline mode
+2025-03-30 15:26:38,298 - INFO - Ticket printed successfully
+2025-03-30 15:26:56,138 - INFO - Processing vehicle: RSI152656 (Mobil)
+2025-03-30 15:26:56,224 - INFO - Using offline mode
+2025-03-30 15:26:56,283 - INFO - Ticket printed successfully
+2025-03-30 15:42:07,470 - INFO - Connecting to database at 192.168.2.6:5432
+2025-03-30 15:42:09,518 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 15:42:09,518 - ERROR - Connection details: host=192.168.2.6, port=5432, db=parkir2
+2025-03-30 15:42:09,518 - ERROR - Database connection test failed: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 15:42:09,548 - INFO - Ticket printer initialized
+2025-03-30 15:42:09,601 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+2025-03-30 15:44:19,081 - INFO - Connecting to database at 192.168.2.6:5432
+2025-03-30 15:44:21,103 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 15:44:21,104 - ERROR - Connection details: host=192.168.2.6, port=5432, db=parkir2
+2025-03-30 15:44:21,104 - ERROR - Database connection test failed: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 15:44:21,104 - INFO - Connecting to database at 192.168.2.6:5432
+2025-03-30 15:44:23,155 - ERROR - Database connection error: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 15:44:23,155 - ERROR - Connection details: host=192.168.2.6, port=5432, db=parkir2
+2025-03-30 15:44:23,156 - ERROR - Database connection test failed: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 16:33:27,025 - INFO - Ticket printer initialized
+2025-03-30 16:33:27,053 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 16:33:27,057 - INFO - Arduino connected successfully
+2025-03-30 16:33:27,057 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 16:33:28,684 - INFO - Processing vehicle: RSI163328 (Motor)
+2025-03-30 16:33:28,773 - INFO - Using offline mode
+2025-03-30 16:33:28,881 - INFO - Ticket printed successfully
+2025-03-30 16:34:15,486 - INFO - Processing vehicle: RSI163415 (Mobil)
+2025-03-30 16:34:15,576 - INFO - Using offline mode
+2025-03-30 16:34:15,628 - INFO - Ticket printed successfully
+2025-03-30 16:36:39,567 - INFO - Ticket printer initialized
+2025-03-30 16:36:39,597 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 16:36:39,598 - WARNING - Could not connect to Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-03-30 16:36:39,598 - INFO - Running in keyboard input mode
+2025-03-30 16:36:39,598 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 16:37:07,397 - INFO - Ticket printer initialized
+2025-03-30 16:37:07,423 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 16:37:07,426 - INFO - Arduino connected successfully
+2025-03-30 16:37:07,426 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 16:37:09,053 - INFO - Processing vehicle: RSI163709 (Motor)
+2025-03-30 16:37:09,124 - INFO - Using offline mode
+2025-03-30 16:37:09,196 - INFO - Ticket printed successfully
+2025-03-30 16:37:26,141 - INFO - Processing vehicle: RSI163726 (Mobil)
+2025-03-30 16:37:26,226 - INFO - Using offline mode
+2025-03-30 16:37:26,284 - INFO - Ticket printed successfully
+2025-03-30 16:52:50,612 - INFO - Ticket printer initialized
+2025-03-30 16:52:50,644 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 16:52:50,645 - WARNING - Could not connect to Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-03-30 16:52:50,645 - INFO - Running in keyboard input mode
+2025-03-30 16:52:50,645 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 17:13:06,357 - INFO - Ticket printer initialized
+2025-03-30 17:13:06,384 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 17:13:06,387 - INFO - Arduino connected successfully
+2025-03-30 17:13:06,387 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 17:13:08,013 - INFO - Processing vehicle: RSI171308 (Motor)
+2025-03-30 17:13:08,075 - INFO - Using offline mode
+2025-03-30 17:13:08,162 - INFO - Ticket printed successfully
+2025-03-30 17:13:27,193 - INFO - Processing vehicle: RSI171327 (Motor)
+2025-03-30 17:13:27,262 - INFO - Using offline mode
+2025-03-30 17:13:27,319 - INFO - Ticket printed successfully
+2025-03-30 17:18:25,715 - INFO - Ticket printer initialized
+2025-03-30 17:18:25,743 - INFO - Test connection response: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
+
+2025-03-30 17:18:25,745 - INFO - Arduino connected successfully
+2025-03-30 17:18:25,745 - INFO - Initialized with printer: EPSON TM-T82X Receipt
+2025-03-30 17:18:27,372 - INFO - Processing vehicle: RSI171827 (Motor)
+2025-03-30 17:18:27,446 - INFO - Using offline mode
+2025-03-30 17:18:27,518 - INFO - Ticket printed successfully
+2025-03-30 17:18:46,432 - INFO - Processing vehicle: RSI171846 (Mobil)
+2025-03-30 17:18:46,518 - INFO - Using offline mode
+2025-03-30 17:18:46,575 - INFO - Ticket printed successfully
+2025-03-30 18:38:59,319 - INFO - Available printers: ((8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', None), (8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-03-30 18:38:59,319 - INFO - Found EPSON printer: EPSON TM-T82X Receipt
+2025-03-30 18:38:59,327 - INFO - Found port: COM1 - Communications Port (COM1)
+2025-03-30 18:38:59,327 - INFO - Found port: COM7 - Arduino Uno (COM7)
+2025-03-30 18:39:01,329 - INFO - Arduino connection established on COM7
+2025-03-30 18:39:01,338 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 18:39:01,353 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-30 18:39:01,369 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 18:39:01,384 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 500 360
+2025-03-30 18:39:16,636 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 18:39:16,661 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 500 360
+2025-03-30 21:04:29,210 - INFO - Printer tersedia: ((8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', None), (8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-03-30 21:04:29,210 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-30 21:04:29,221 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-03-30 21:04:29,221 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-03-30 21:04:31,224 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-30 21:04:31,245 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 21:04:31,283 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-30 21:04:31,292 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-03-30 21:04:58,151 - INFO - Menerima nomor plat dari Arduino: 1
+2025-03-30 21:07:10,947 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 21:07:10,969 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 500 365
+2025-03-30 21:09:51,017 - INFO - Printer tersedia: ((8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', None), (8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-03-30 21:09:51,017 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-30 21:09:51,023 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-03-30 21:09:51,023 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-03-30 21:09:53,025 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-30 21:09:53,036 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 21:09:53,054 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-30 21:09:53,068 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-03-30 21:10:14,224 - INFO - Menerima nomor plat dari Arduino: 1
+2025-03-30 21:10:17,532 - INFO - Menerima nomor plat dari Arduino: 1
+2025-03-30 21:10:35,194 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 21:10:35,208 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 500 365
+2025-03-31 03:38:41,694 - INFO - Printer tersedia: ((8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', None), (8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-03-31 03:38:41,694 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 03:38:41,705 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-03-31 03:38:41,705 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-03-31 03:38:41,706 - ERROR - Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-03-31 03:38:41,709 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:38:41,727 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 03:49:03,823 - INFO - Printer tersedia: ['OneNote for Windows 10', 'Send To OneNote 2010', 'Microsoft XPS Document Writer', 'Microsoft Print to PDF', 'Fax', 'EPSON TM-T82X Receipt', 'AnyDesk Printer']
+2025-03-31 03:49:03,823 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 03:49:05,826 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-31 03:49:05,835 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:49:05,853 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 03:49:05,863 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 33}
+2025-03-31 03:49:05,866 - INFO - Received from Arduino: READY
+2025-03-31 03:49:05,867 - INFO - Sending data to server: {"plat": "READY", "vehicleType": "Motor", "vehicleTypeId": 2, "isParked": true}
+2025-03-31 03:49:05,871 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:49:05,915 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-03-31 03:49:05,926 - INFO - Server response: {"data": {"id": 161, "ticket": "OFF0023", "waktu": "2025-03-31 03:49:05"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 03:49:06,002 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 03:49:06,003 - ERROR - Failed to create ticket image
+2025-03-31 03:49:31,067 - INFO - Received from Arduino: 1
+2025-03-31 03:57:36,118 - INFO - Printer tersedia: ['OneNote for Windows 10', 'Send To OneNote 2010', 'Microsoft XPS Document Writer', 'Microsoft Print to PDF', 'Fax', 'EPSON TM-T82X Receipt', 'AnyDesk Printer']
+2025-03-31 03:57:36,118 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 03:57:38,120 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-31 03:57:38,129 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:57:38,146 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 03:57:38,156 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 34}
+2025-03-31 03:57:38,158 - INFO - Received from Arduino: READY
+2025-03-31 03:57:38,160 - INFO - Sending data to server: {"plat": "READY", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 03:57:38,163 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:57:38,207 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 03:57:38,217 - INFO - Server response: {"data": {"id": 162, "ticket": "OFF0024", "waktu": "2025-03-31 03:57:38"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 03:57:38,248 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 03:57:38,249 - ERROR - Failed to create ticket image
+2025-03-31 03:58:04,940 - INFO - Printer tersedia: ['OneNote for Windows 10', 'Send To OneNote 2010', 'Microsoft XPS Document Writer', 'Microsoft Print to PDF', 'Fax', 'EPSON TM-T82X Receipt', 'AnyDesk Printer']
+2025-03-31 03:58:04,940 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 03:58:06,942 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-31 03:58:06,953 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:58:06,982 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 03:58:06,992 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 35}
+2025-03-31 03:58:06,996 - INFO - Received from Arduino: READY
+2025-03-31 03:58:06,998 - INFO - Sending data to server: {"plat": "READY", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 03:58:07,001 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:58:07,048 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 03:58:07,058 - INFO - Server response: {"data": {"id": 163, "ticket": "OFF0025", "waktu": "2025-03-31 03:58:06"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 03:58:07,095 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 03:58:07,095 - ERROR - Failed to create ticket image
+2025-03-31 03:58:30,550 - INFO - Received from Arduino: 1
+2025-03-31 03:58:30,550 - INFO - Generated random plate from button press: VN3556
+2025-03-31 03:58:30,552 - INFO - Sending data to server: {"plat": "VN3556", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 03:58:30,555 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:58:30,585 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 03:58:30,595 - INFO - Server response: {"data": {"id": 164, "ticket": "OFF0026", "waktu": "2025-03-31 03:58:30"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 03:58:30,625 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 03:58:30,626 - ERROR - Failed to create ticket image
+2025-03-31 04:01:45,696 - INFO - Received from Arduino: 1
+2025-03-31 04:01:45,696 - INFO - Generated random plate from button press: YU1014
+2025-03-31 04:01:45,698 - INFO - Sending data to server: {"plat": "YU1014", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:01:45,701 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:01:45,743 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:01:45,753 - INFO - Server response: {"data": {"id": 165, "ticket": "OFF0027", "waktu": "2025-03-31 04:01:45"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:01:45,791 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:01:45,792 - ERROR - Failed to create ticket image
+2025-03-31 04:02:38,706 - INFO - Printer tersedia: ['OneNote for Windows 10', 'Send To OneNote 2010', 'Microsoft XPS Document Writer', 'Microsoft Print to PDF', 'Fax', 'EPSON TM-T82X Receipt', 'AnyDesk Printer']
+2025-03-31 04:02:38,706 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 04:02:40,708 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-31 04:02:40,717 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:02:40,735 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 04:02:40,745 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 38}
+2025-03-31 04:02:40,747 - INFO - Received from Arduino: READY
+2025-03-31 04:02:40,749 - INFO - Sending data to server: {"plat": "READY", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:02:40,753 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:02:40,788 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:02:40,798 - INFO - Server response: {"data": {"id": 166, "ticket": "OFF0028", "waktu": "2025-03-31 04:02:40"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:02:40,801 - ERROR - Error printing ticket with ESC/POS: 'bytes' object cannot be interpreted as an integer
+2025-03-31 04:02:40,830 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:02:40,831 - WARNING - ESC/POS printing failed, falling back to image-based printing
+2025-03-31 04:02:40,845 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:02:40,845 - ERROR - Failed to create ticket image
+2025-03-31 04:03:16,743 - INFO - Received from Arduino: 1
+2025-03-31 04:03:16,743 - INFO - Generated random plate from button press: JO4360
+2025-03-31 04:03:16,745 - INFO - Sending data to server: {"plat": "JO4360", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:03:16,748 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:03:16,781 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:03:16,791 - INFO - Server response: {"data": {"id": 167, "ticket": "OFF0029", "waktu": "2025-03-31 04:03:16"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:03:16,792 - ERROR - Error printing ticket with ESC/POS: 'bytes' object cannot be interpreted as an integer
+2025-03-31 04:03:16,836 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:03:16,836 - WARNING - ESC/POS printing failed, falling back to image-based printing
+2025-03-31 04:03:16,852 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:03:16,853 - ERROR - Failed to create ticket image
+2025-03-31 04:04:35,536 - INFO - Printer tersedia: ['OneNote for Windows 10', 'Send To OneNote 2010', 'Microsoft XPS Document Writer', 'Microsoft Print to PDF', 'Fax', 'EPSON TM-T82X Receipt', 'AnyDesk Printer']
+2025-03-31 04:04:35,537 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 04:04:35,538 - ERROR - Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-03-31 04:04:35,544 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:04:35,574 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 04:04:35,584 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 40}
+2025-03-31 04:04:54,773 - INFO - Simulated button press - generated plate: IC2426
+2025-03-31 04:04:54,774 - INFO - Sending data to server: {"plat": "IC2426", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:04:54,777 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:04:54,797 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:04:54,807 - INFO - Server response: {"data": {"id": 168, "ticket": "OFF0030", "waktu": "2025-03-31 04:04:54"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:04:54,856 - INFO - Ticket printed successfully: OFF0030
+2025-03-31 04:05:18,828 - INFO - Received from Arduino: 1
+2025-03-31 04:05:18,828 - INFO - Generated random plate from button press: OW5889
+2025-03-31 04:05:18,829 - INFO - Sending data to server: {"plat": "OW5889", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:05:18,832 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:05:18,878 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:05:18,889 - INFO - Server response: {"data": {"id": 169, "ticket": "OFF0031", "waktu": "2025-03-31 04:05:18"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:05:18,891 - ERROR - Error printing ticket with ESC/POS: 'bytes' object cannot be interpreted as an integer
+2025-03-31 04:05:18,934 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:05:18,934 - WARNING - ESC/POS printing failed, falling back to image-based printing
+2025-03-31 04:05:18,952 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:05:18,952 - ERROR - Failed to create ticket image
+2025-03-31 04:06:06,082 - INFO - Received from Arduino: 1
+2025-03-31 04:06:06,083 - INFO - Generated random plate from button press: DK1540
+2025-03-31 04:06:06,085 - INFO - Sending data to server: {"plat": "DK1540", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:06:06,088 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:06:06,130 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:06:06,140 - INFO - Server response: {"data": {"id": 170, "ticket": "OFF0032", "waktu": "2025-03-31 04:06:05"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:06:06,142 - ERROR - Error printing ticket with ESC/POS: 'bytes' object cannot be interpreted as an integer
+2025-03-31 04:06:06,171 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:06:06,171 - WARNING - ESC/POS printing failed, falling back to image-based printing
+2025-03-31 04:06:06,190 - ERROR - Error creating ticket image: 'FreeTypeFont' object has no attribute 'getsize'
+2025-03-31 04:06:06,190 - ERROR - Failed to create ticket image
+2025-03-31 04:07:46,952 - INFO - Simulated button press - generated plate: MH0865
+2025-03-31 04:07:46,952 - INFO - Sending data to server: {"plat": "MH0865", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-03-31 04:07:46,955 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:07:46,996 - DEBUG - http://192.168.2.6:5051 "POST /api/v2/masuk HTTP/1.1" 200 155
+2025-03-31 04:07:47,006 - INFO - Server response: {"data": {"id": 171, "ticket": "OFF0033", "waktu": "2025-03-31 04:07:46"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:07:47,054 - INFO - Ticket printed successfully: OFF0033
+2025-03-31 04:09:27,030 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:09:27,047 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 04:09:27,057 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 44}
+2025-03-31 04:09:29,161 - INFO - Sending data to server: {"plat": "QB2328", "vehicleType": "Motor", "vehicleTypeId": 2, "isParked": true}
+2025-03-31 04:09:29,162 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:09:29,194 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-03-31 04:09:29,204 - INFO - Server response: {"data": {"id": 172, "ticket": "OFF0034", "waktu": "2025-03-31 04:09:28"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:09:29,204 - INFO - Printing to: EPSON TM-T82X Receipt
+2025-03-31 04:09:29,245 - INFO - Ticket printed successfully!
+2025-03-31 04:09:56,488 - INFO - Sending data to server: {"plat": "CZ5414", "vehicleType": "Motor", "vehicleTypeId": 2, "isParked": true}
+2025-03-31 04:09:56,489 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:09:56,526 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-03-31 04:09:56,536 - INFO - Server response: {"data": {"id": 173, "ticket": "OFF0035", "waktu": "2025-03-31 04:09:56"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:09:56,536 - INFO - Printing to: EPSON TM-T82X Receipt
+2025-03-31 04:09:56,584 - INFO - Ticket printed successfully!
+2025-03-31 04:14:10,056 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:14:10,086 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 04:14:10,096 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 46}
+2025-03-31 04:14:12,200 - INFO - Sending data to server: {"plat": "ZE2582", "vehicleType": "Motor", "vehicleTypeId": 2, "isParked": true}
+2025-03-31 04:14:12,201 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:14:12,244 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-03-31 04:14:12,254 - INFO - Server response: {"data": {"id": 174, "ticket": "OFF0036", "waktu": "2025-03-31 04:14:12"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:14:12,254 - INFO - Printing to: EPSON TM-T82X Receipt
+2025-03-31 04:14:12,277 - INFO - Ticket printed successfully!
+2025-03-31 04:17:30,174 - INFO - Sending data to server: {"plat": "UU3059", "vehicleType": "Motor", "vehicleTypeId": 2, "isParked": true}
+2025-03-31 04:17:30,177 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:17:30,211 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-03-31 04:17:30,221 - INFO - Server response: {"data": {"id": 175, "ticket": "OFF0037", "waktu": "2025-03-31 04:17:30"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:17:30,221 - INFO - Printing to: EPSON TM-T82X Receipt
+2025-03-31 04:17:30,278 - INFO - Ticket printed successfully!
+2025-03-31 04:18:26,068 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:18:26,084 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 04:18:26,094 - INFO - Connected to server. Response: {"message": "Koneksi berhasil", "success": true, "total_kendaraan": 48}
+2025-03-31 04:18:28,199 - INFO - Sending data to server: {"plat": "NF2635", "vehicleType": "Motor", "vehicleTypeId": 2, "isParked": true}
+2025-03-31 04:18:28,203 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:18:28,244 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-03-31 04:18:28,253 - INFO - Server response: {"data": {"id": 176, "ticket": "OFF0038", "waktu": "2025-03-31 04:18:28"}, "message": "Kendaraan berhasil masuk", "success": true}
+2025-03-31 04:18:28,254 - INFO - Printing to: EPSON TM-T82X Receipt
+2025-03-31 04:18:28,291 - INFO - Ticket printed successfully!
+2025-03-31 04:19:08,703 - INFO - Printing to: EPSON TM-T82X Receipt
+2025-03-31 04:19:08,703 - INFO - Using shortened barcode ticket: 0219527426 from TKT202503290219527426
+2025-03-31 04:19:08,727 - INFO - Ticket printed successfully!
+2025-03-31 04:30:26,225 - INFO - Printer tersedia: ((8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', None), (8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-03-31 04:30:26,226 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-03-31 04:30:26,233 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-03-31 04:30:26,233 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-03-31 04:30:28,235 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-03-31 04:30:28,251 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 04:30:28,273 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 04:30:28,281 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-03-31 04:30:49,433 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-03 14:57:22,356 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-03 14:57:22,357 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-03 14:57:22,391 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-03 14:57:22,392 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-03 14:57:22,392 - ERROR - Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-04-03 14:57:22,400 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-03 14:57:24,444 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000001433F5C70E0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-03 14:57:57,934 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-03 14:57:57,934 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-03 14:57:57,940 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-03 14:57:57,941 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-03 14:57:57,941 - ERROR - Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-04-03 14:57:57,943 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-03 14:57:59,988 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000027E0FEC70E0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-04 08:47:21,828 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-04 08:47:21,829 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-04 08:47:21,852 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-04 08:47:21,852 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-04 08:47:23,854 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-04-04 08:47:23,865 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-04 08:47:23,938 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-04-04 08:47:23,950 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-04-04 08:47:27,583 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 08:47:46,381 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 08:48:04,442 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 08:48:17,363 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 08:49:00,512 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 08:49:11,621 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-04 08:49:11,650 - DEBUG - http://192.168.2.6:5051 "POST /api/masuk HTTP/1.1" 200 155
+2025-04-04 08:49:29,700 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-04 08:49:29,700 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-04 08:49:29,710 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-04 08:49:29,710 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-04 08:49:31,712 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-04-04 08:49:31,716 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-04 08:49:31,748 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-04-04 08:49:31,760 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-04-04 08:49:49,705 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 08:50:12,601 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-04 20:32:21,621 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-04 20:32:21,623 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-04 20:32:21,663 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-04 20:32:21,663 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-04 20:32:23,665 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-04-04 20:32:23,672 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-04 20:32:25,731 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x00000235BCD28AD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-04 20:32:25,733 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-04-06 11:19:09,716 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-06 11:19:09,717 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-06 11:19:09,743 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-06 11:19:09,743 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-06 11:19:09,743 - ERROR - Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-04-06 11:19:09,750 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-06 11:19:11,783 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000021949028AD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-06 14:02:37,342 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-06 14:02:37,343 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-06 14:02:37,368 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-06 14:02:37,368 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-06 14:02:37,368 - ERROR - Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-04-06 14:02:37,376 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-06 14:02:39,423 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000021F7C348AD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-06 14:22:30,144 - INFO - Printer tersedia: ((8388608, 'Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,', 'Send To OneNote 2010', ''), (8388608, 'OneNote for Windows 10,Microsoft Software Printer Driver,', 'OneNote for Windows 10', ''), (8388608, 'Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,', 'Microsoft XPS Document Writer', ''), (8388608, 'Microsoft Print to PDF,Microsoft Print To PDF,', 'Microsoft Print to PDF', ''), (8388608, 'Fax,Microsoft Shared Fax Driver,', 'Fax', ''), (8388608, 'EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,', 'EPSON TM-T82X Receipt', ''), (8388608, 'AnyDesk Printer,AnyDesk v4 Printer Driver,', 'AnyDesk Printer', ''))
+2025-04-06 14:22:30,145 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-06 14:22:30,177 - INFO - Port ditemukan: COM1 - Communications Port (COM1)
+2025-04-06 14:22:30,177 - INFO - Port ditemukan: COM7 - Arduino Uno (COM7)
+2025-04-06 14:22:32,179 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-04-06 14:22:32,188 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-06 14:22:34,197 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002344EE28AD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-06 14:22:34,199 - DEBUG - Menerima pesan tes dari Arduino: READY
+2025-04-06 14:22:57,367 - INFO - Menerima nomor plat dari Arduino: 1

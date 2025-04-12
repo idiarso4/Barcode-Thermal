@@ -1,0 +1,4 @@
+2025-03-31 03:44:53,580 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:44:53,595 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-31 03:45:24,965 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-31 03:45:24,978 - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80

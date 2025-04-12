@@ -1,0 +1,232 @@
+2025-03-30 03:18:44,713 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:18:44,741 - ERROR - Vehicle entry failed: 500 - {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (38, B1234XY, Motor, PK-20250330031844, 2, null, null, null, 2025-03-30 03:18:44.149902, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 03:18:44,756 - INFO - Retrieved 10 vehicles
+2025-03-30 03:18:44,814 - INFO - Vehicle exit successful: {'data': {'id': 34, 'plat': 'R 2111 KL', 'waktu_keluar': '2025-03-30T03:18:44.223462', 'waktu_masuk': '2025-03-29T15:43:27.248494'}, 'message': 'Kendaraan berhasil keluar', 'success': True}
+2025-03-30 03:21:16,872 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:32:47,977 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:32:47,977 - INFO - Button initialized on GPIO17
+2025-03-30 03:32:47,978 - INFO - Started button listener
+2025-03-30 03:33:08,053 - INFO - Button handler stopped
+2025-03-30 03:38:37,548 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:38:37,549 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:38:37,549 - INFO - Started button listener
+2025-03-30 03:41:29,790 - INFO - Ticket printer initialized
+2025-03-30 03:41:29,817 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:41:29,822 - INFO - Ticket printer initialized
+2025-03-30 03:41:29,823 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:41:29,823 - INFO - Started button listener
+2025-03-30 03:52:57,859 - INFO - Ticket printer initialized
+2025-03-30 03:52:57,890 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:52:57,900 - INFO - Ticket printer initialized
+2025-03-30 03:52:57,900 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:52:57,901 - INFO - Started button listener
+2025-03-30 03:54:08,382 - INFO - Button handler stopped
+2025-03-30 03:54:39,652 - INFO - Ticket printer initialized
+2025-03-30 03:54:39,678 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:54:39,686 - INFO - Ticket printer initialized
+2025-03-30 03:54:39,686 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:54:39,687 - INFO - Started button listener
+2025-03-30 03:54:50,738 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 03:54:50,774 - ERROR - Vehicle entry failed: 500 - {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (39, RSI035450, Mobil, PK-20250330035450, 1, null, null, null, 2025-03-30 03:54:50.422936, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 03:54:50,774 - ERROR - Failed to register vehicle: {'error': 'HTTP 500'}
+2025-03-30 03:57:51,517 - INFO - Ticket printer initialized
+2025-03-30 03:57:51,545 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:57:51,556 - INFO - Ticket printer initialized
+2025-03-30 03:57:51,556 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:57:51,556 - INFO - Started button listener
+2025-03-30 03:58:26,035 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 03:58:26,035 - INFO - Sending vehicle entry request: {'plat': 'RSI035826', 'jenis': 'Motor', 'tiket': 'PK-20250330035826', 'waktu_masuk': '2025-03-30 03:58:26'}
+2025-03-30 03:58:26,060 - ERROR - Vehicle entry error: 500 Server Error: INTERNAL SERVER ERROR for url: http://192.168.2.6:5051/api/masuk
+2025-03-30 03:58:26,061 - ERROR - Failed to register vehicle: {'error': '500 Server Error: INTERNAL SERVER ERROR for url: http://192.168.2.6:5051/api/masuk'}
+2025-03-30 03:58:31,544 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 03:58:31,545 - INFO - Sending vehicle entry request: {'plat': 'RSI035831', 'jenis': 'Motor', 'tiket': 'PK-20250330035831', 'waktu_masuk': '2025-03-30 03:58:31'}
+2025-03-30 03:58:31,569 - ERROR - Vehicle entry error: 500 Server Error: INTERNAL SERVER ERROR for url: http://192.168.2.6:5051/api/masuk
+2025-03-30 03:58:31,569 - ERROR - Failed to register vehicle: {'error': '500 Server Error: INTERNAL SERVER ERROR for url: http://192.168.2.6:5051/api/masuk'}
+2025-03-30 03:59:21,002 - INFO - Ticket printer initialized
+2025-03-30 03:59:21,032 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:59:21,044 - INFO - Ticket printer initialized
+2025-03-30 03:59:21,044 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:59:21,050 - INFO - Started button listener
+2025-03-30 03:59:25,270 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 03:59:25,271 - INFO - Sending vehicle entry request: {'plat': 'RSI035925', 'jenis': 'Mobil', 'tiket': 'PK-20250330035925', 'waktu_masuk': '2025-03-30 03:59:25', 'IsParked': True}
+2025-03-30 03:59:25,295 - ERROR - Vehicle entry error: 500 Server Error: INTERNAL SERVER ERROR for url: http://192.168.2.6:5051/api/masuk
+2025-03-30 03:59:25,295 - ERROR - Failed to register vehicle: {'error': '500 Server Error: INTERNAL SERVER ERROR for url: http://192.168.2.6:5051/api/masuk'}
+2025-03-30 03:59:59,093 - INFO - Ticket printer initialized
+2025-03-30 03:59:59,124 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 03:59:59,131 - INFO - Ticket printer initialized
+2025-03-30 03:59:59,131 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 03:59:59,133 - INFO - Started button listener
+2025-03-30 04:00:02,739 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 04:00:02,740 - INFO - Sending vehicle entry request: {'Id': 'RSI040002', 'VehicleType': 2, 'IsParked': True, 'EntryTime': '2025-03-30 04:00:02', 'TicketNumber': 'PK-20250330040002'}
+2025-03-30 04:00:02,754 - ERROR - Vehicle entry error: 400 Client Error: BAD REQUEST for url: http://192.168.2.6:5051/api/masuk
+2025-03-30 04:00:02,754 - ERROR - Failed to register vehicle: {'error': '400 Client Error: BAD REQUEST for url: http://192.168.2.6:5051/api/masuk'}
+2025-03-30 04:06:28,230 - INFO - Ticket printer initialized
+2025-03-30 04:06:28,263 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:06:28,273 - INFO - Ticket printer initialized
+2025-03-30 04:06:28,273 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 04:06:28,274 - INFO - Started button listener
+2025-03-30 04:06:33,173 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 04:06:33,174 - INFO - Sending vehicle entry request: {'plat': 'RSI040633', 'jenis': 'Motor'}
+2025-03-30 04:06:33,198 - ERROR - Vehicle entry failed: 500 - {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (43, RSI040633, Motor, PK-20250330040632, 2, null, null, null, 2025-03-30 04:06:32.891058, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 04:06:33,198 - ERROR - Failed to register vehicle: {'error': 'HTTP 500'}
+2025-03-30 04:07:40,201 - INFO - Ticket printer initialized
+2025-03-30 04:07:40,232 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:07:40,243 - INFO - Ticket printer initialized
+2025-03-30 04:07:40,243 - INFO - Buttons initialized on GPIO17 and GPIO27
+2025-03-30 04:07:40,244 - INFO - Started button listener
+2025-03-30 04:08:18,019 - INFO - Button pressed - Processing vehicle entry
+2025-03-30 04:08:18,019 - INFO - Sending vehicle entry request: {'plat': 'RSI040818', 'jenis': 'Mobil'}
+2025-03-30 04:08:18,043 - ERROR - Vehicle entry failed: 500 - {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (45, RSI040818, Mobil, PK-20250330040817, 1, null, null, null, 2025-03-30 04:08:17.74269, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 04:08:18,043 - ERROR - Failed to register vehicle: {'error': 'HTTP 500'}
+2025-03-30 04:13:12,590 - INFO - Ticket printer initialized
+2025-03-30 04:13:12,616 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:13:12,616 - INFO - Button initialized on GPIO17
+2025-03-30 04:13:12,617 - INFO - Started button listener
+2025-03-30 04:19:36,009 - INFO - Ticket printer initialized
+2025-03-30 04:19:36,040 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:21:38,646 - INFO - Ticket printer initialized
+2025-03-30 04:21:38,676 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:26:55,993 - INFO - Ticket printer initialized
+2025-03-30 04:26:56,022 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:27:01,873 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:27:01,878 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:27:01,879 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:27:09,408 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:27:09,411 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:27:09,412 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:29:25,681 - INFO - Ticket printer initialized
+2025-03-30 04:29:25,709 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:29:29,751 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:29:29,755 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:29:29,755 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:29:34,376 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:29:34,380 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:29:34,380 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:35:45,810 - INFO - Ticket printer initialized
+2025-03-30 04:35:45,838 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:35:49,280 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:35:49,282 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:35:49,292 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:35:49,294 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:35:52,920 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:35:52,922 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:35:52,926 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:35:52,928 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:35:52,929 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:35:53,945 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:35:53,946 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:35:53,951 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:35:53,955 - ERROR - Error processing vehicle entry: ParkingAPI.vehicle_entry() takes 2 positional arguments but 3 were given
+2025-03-30 04:35:53,956 - ERROR - Error memproses push button: 'str' object has no attribute 'get'
+2025-03-30 04:53:11,356 - INFO - Ticket printer initialized
+2025-03-30 04:53:11,399 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 04:53:14,155 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 04:53:14,159 - INFO - Sending vehicle entry request: {"tiket": "PK20250330045314", "jenis": "Motor"}
+2025-03-30 04:53:14,177 - INFO - Response status: 400
+2025-03-30 04:53:14,177 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 04:53:14,177 - ERROR - API request failed: 400
+2025-03-30 04:53:14,178 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:00:02,969 - INFO - Ticket printer initialized
+2025-03-30 05:00:02,999 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 05:00:11,927 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 05:00:11,931 - INFO - Sending vehicle entry request: {"tiket": "PK20250330050011", "jenis": "Motor"}
+2025-03-30 05:00:11,948 - INFO - Response status: 400
+2025-03-30 05:00:11,948 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 05:00:11,948 - ERROR - API request failed: 400
+2025-03-30 05:00:11,949 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:02:16,206 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 05:02:16,211 - INFO - Sending vehicle entry request: {"tiket": "PK20250330050216", "jenis": "Motor"}
+2025-03-30 05:02:16,228 - INFO - Response status: 400
+2025-03-30 05:02:16,229 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 05:02:16,229 - ERROR - API request failed: 400
+2025-03-30 05:02:16,229 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:06:56,073 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 05:06:56,078 - INFO - Sending vehicle entry request: {"tiket": "PK20250330050656", "jenis": "Motor"}
+2025-03-30 05:06:56,096 - INFO - Response status: 400
+2025-03-30 05:06:56,096 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 05:06:56,096 - ERROR - API request failed: 400
+2025-03-30 05:06:56,096 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:09:28,061 - INFO - Ticket printer initialized
+2025-03-30 05:09:28,090 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 05:09:36,856 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 05:09:36,861 - INFO - Sending vehicle entry request: {"tiket": "PK20250330050936", "jenis": "Motor"}
+2025-03-30 05:09:36,879 - INFO - Response status: 400
+2025-03-30 05:09:36,879 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 05:09:36,879 - ERROR - API request failed: 400
+2025-03-30 05:09:36,879 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:12:01,722 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 05:12:01,727 - INFO - Sending vehicle entry request: {"tiket": "PK20250330051201", "jenis": "Motor"}
+2025-03-30 05:12:01,745 - INFO - Response status: 400
+2025-03-30 05:12:01,745 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 05:12:01,746 - ERROR - API request failed: 400
+2025-03-30 05:12:01,747 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:16:56,256 - INFO - Ticket printer initialized
+2025-03-30 05:16:56,288 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 05:17:08,537 - INFO - Push button ditekan - Memproses kendaraan
+2025-03-30 05:17:08,542 - INFO - Sending vehicle entry request: {"tiket": "PK20250330051708", "jenis": "Motor"}
+2025-03-30 05:17:08,559 - INFO - Response status: 400
+2025-03-30 05:17:08,560 - INFO - Response body: {
+  "message": "Nomor plat wajib diisi",
+  "success": false
+}
+
+2025-03-30 05:17:08,560 - ERROR - API request failed: 400
+2025-03-30 05:17:08,560 - ERROR - Failed to register vehicle: {'error': 'HTTP 400'}
+2025-03-30 05:40:09,668 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 05:40:09,671 - INFO - Sending vehicle entry request: {"plat": "RSI054009", "jenis": "Motor"}
+2025-03-30 05:40:09,694 - ERROR - Vehicle entry failed with status 500
+2025-03-30 05:41:45,398 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 05:41:45,405 - INFO - Sending vehicle entry request: {"plat": "RSI054145", "jenis": "Motor"}
+2025-03-30 05:41:45,429 - INFO - Raw response: {
+  "message": "Error: null value in column \"IsParked\" of relation \"Vehicles\" violates not-null constraint\nDETAIL:  Failing row contains (47, RSI054145, Motor, PK-20250330054145, 2, null, null, null, 2025-03-30 05:41:45.206064, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).\n",
+  "success": false
+}
+
+2025-03-30 05:41:45,430 - ERROR - Vehicle entry failed with status 500: Error: null value in column "IsParked" of relation "Vehicles" violates not-null constraint
+DETAIL:  Failing row contains (47, RSI054145, Motor, PK-20250330054145, 2, null, null, null, 2025-03-30 05:41:45.206064, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null, null).
+
+2025-03-30 05:44:31,117 - INFO - Ticket printer initialized
+2025-03-30 05:44:31,150 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 13:19:51,706 - INFO - Ticket printer initialized
+2025-03-30 13:19:51,741 - INFO - API connection successful: {'message': 'Koneksi berhasil', 'success': True, 'total_kendaraan': 11}
+2025-03-30 13:19:51,745 - INFO - Initialized with printer: EPSON TM-T82X Receipt

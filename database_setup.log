@@ -1,0 +1,12 @@
+2025-03-30 05:30:29,757 - INFO - Attempting to connect to database...
+2025-03-30 05:30:31,809 - ERROR - Database connection attempt 1 failed: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 05:30:36,813 - INFO - Attempting to connect to database...
+2025-03-30 05:30:38,840 - ERROR - Database connection attempt 2 failed: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+
+2025-03-30 05:30:48,842 - INFO - Attempting to connect to database...
+2025-03-30 05:30:50,888 - ERROR - Database connection attempt 3 failed: connection to server at "192.168.2.6", port 5432 failed: Connection refused (0x0000274D/10061)
+	Is the server running on that host and accepting TCP/IP connections?
+

@@ -1,0 +1,8 @@
+2025-03-30 16:07:37,026 - parking_test - INFO - Starting parking test client
+2025-03-30 16:07:37,029 - urllib3.connectionpool - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-03-30 16:07:37,049 - urllib3.connectionpool - DEBUG - http://192.168.2.6:5051 "GET /api/test HTTP/1.1" 200 80
+2025-03-30 16:07:37,060 - parking_test - INFO - Connection test: {
+  "message": "Koneksi berhasil",
+  "success": true,
+  "total_kendaraan": 11
+}
