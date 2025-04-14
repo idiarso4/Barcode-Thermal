@@ -7,4 +7,6 @@ pyserial==3.5
 python-escpos==3.0a8
 pyusb==1.2.1
 opencv-python==4.8.1.78
-RPi.GPIO==0.7.1 
+psutil==5.9.8
+psycopg2==2.9.9; sys_platform != 'win32'
+psycopg2-binary==2.9.9; sys_platform == 'win32' 

@@ -1,0 +1,12 @@
+2025-04-14 22:07:22,776 - ERROR - Gagal setup Arduino: Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-04-14 22:07:22,776 - ERROR - Fatal error: Gagal setup Arduino: Gagal koneksi ke Arduino: could not open port 'COM7': PermissionError(13, 'Access is denied.', None, 5)
+2025-04-14 22:15:02,390 - ERROR - Gagal setup Arduino: Gagal koneksi ke Arduino: could not open port 'ÿþC\x00O\x00M\x007\x00\n\x00\n\x00': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+2025-04-14 22:15:02,391 - ERROR - Fatal error: Gagal setup Arduino: Gagal koneksi ke Arduino: could not open port 'ÿþC\x00O\x00M\x007\x00\n\x00\n\x00': FileNotFoundError(2, 'The system cannot find the file specified.', None, 2)
+2025-04-14 22:31:49,516 - INFO - Koneksi ke database berhasil
+2025-04-14 22:32:17,513 - INFO - Tombol keyboard '1' terdeteksi
+2025-04-14 22:32:17,714 - INFO - Mulai proses pencetakan tiket
+2025-04-14 22:32:17,718 - ERROR - Gagal menyimpan ke database: relation "public.CaptureTickets" does not exist
+LINE 2:             INSERT INTO public."CaptureTickets" 
+                                ^
+
+2025-04-14 22:32:17,806 - INFO - Proses cetak selesai

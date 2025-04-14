@@ -11,8 +11,17 @@ import json
 import numpy as np
 import serial
 import win32print
-import psycopg2
-from psycopg2 import Error
+
+# Handle psycopg2 import with graceful fallback
+try:
+    import psycopg2  # type: ignore
+    from psycopg2 import Error  # type: ignore
+    PSYCOPG2_AVAILABLE = True
+except ImportError:
+    PSYCOPG2_AVAILABLE = False
+    # Create dummy classes to prevent errors
+    class Error(Exception):
+        pass
 
 # Setup logging
 logging.basicConfig(
@@ -21,6 +30,18 @@ logging.basicConfig(
     format='%(asctime)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger('parking_system')
+
+# Konstanta untuk koneksi database
+DB_SERVER = "192.168.2.6"
+DB_PORT = 5432
+DB_NAME = "parking_db"
+DB_USER = "parking_user"
+DB_PASSWORD = "parking_password"
+
+# Konstanta untuk API
+API_SERVER = "192.168.2.6"
+API_PORT = 5050
+API_ENDPOINT = "/api/tickets"
 
 class ParkingCamera:
     def __init__(self):
@@ -43,7 +64,7 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 0.5  # Ubah dari 10.0 menjadi 0.5 detik delay antara press
+        self.debounce_delay = 0.2  # Kurangi dari 0.5 menjadi 0.2 detik delay antara press
         
         # Buat folder jika belum ada
         if not os.path.exists(self.capture_dir):
@@ -154,6 +175,9 @@ class ParkingCamera:
         Returns: True jika gambar cukup berbeda (kendaraan berbeda)
         """
         try:
+            if img1 is None or img2 is None:
+                return True
+                
             # Convert ke grayscale
             gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
             gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
@@ -190,8 +214,8 @@ class ParkingCamera:
             # Cek apakah OpenCV tersedia
             try:
                 # Jika OpenCV tersedia, buat dummy image sederhana
-                height = 480
-                width = 640
+                height = int(self.config['image']['height'])
+                width = int(self.config['image']['width'])
                 dummy_image = np.zeros((height, width, 3), dtype=np.uint8)
                 
                 # Tambahkan background putih
@@ -206,8 +230,12 @@ class ParkingCamera:
                 cv2.putText(dummy_image, timestamp_str, (50, 150),
                            cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
                 
-                # Simpan dummy image
-                cv2.imwrite(filepath, dummy_image)
+                # Simpan dummy image dengan kompresi
+                cv2.imwrite(filepath, dummy_image, [
+                    cv2.IMWRITE_JPEG_QUALITY, int(self.config['image']['quality']),
+                    cv2.IMWRITE_JPEG_OPTIMIZE, 1,
+                    cv2.IMWRITE_JPEG_PROGRESSIVE, 1
+                ])
                 
                 # Update last image untuk konsistensi
                 self.last_image = dummy_image.copy()
@@ -328,6 +356,64 @@ Last Connected: {self.connection_status['last_connected']}
     def setup_button(self):
         """Setup koneksi ke pushbutton melalui serial"""
         try:
+            # Cek apakah ada file arduino_port.txt dan baca port yang tersimpan
+            if os.path.exists("arduino_port.txt"):
+                with open("arduino_port.txt", "r") as f:
+                    saved_port = f.read().strip()
+                    print(f"\nMenggunakan port Arduino yang tersimpan: {saved_port}")
+                    try:
+                        self.button = serial.Serial(
+                            port=saved_port,
+                            baudrate=9600,
+                            timeout=0.1
+                        )
+                        
+                        # Tunggu Arduino siap
+                        time.sleep(2)
+                        
+                        # Bersihkan buffer
+                        self.button.reset_input_buffer()
+                        self.button.reset_output_buffer()
+                        
+                        # Coba kirim beberapa perintah diagnostik
+                        print("Mengirim perintah diagnostik ke Arduino...")
+                        self.button.write(b'check\n')
+                        time.sleep(0.1)
+                        if self.button.in_waiting:
+                            resp = self.button.read_all().decode(errors='ignore')
+                            print(f"  Respons: {repr(resp)}")
+                        
+                        self.button.write(b'test\n')
+                        time.sleep(0.1)
+                        if self.button.in_waiting:
+                            resp = self.button.read_all().decode(errors='ignore')
+                            print(f"  Respons: {repr(resp)}")
+                            
+                        self.button.write(b'status\n')
+                        time.sleep(0.1)
+                        if self.button.in_waiting:
+                            resp = self.button.read_all().decode(errors='ignore')
+                            print(f"  Respons: {repr(resp)}")
+                            
+                        # Aktifkan mode debug Arduino
+                        self.button.write(b'debug:1\n')
+                        time.sleep(0.1)
+                        
+                        print(f"✅ Pushbutton terhubung di port {saved_port}")
+                        print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
+                        self.button_mode = "serial"
+                        return
+                    except Exception as e:
+                        print(f"❌ Gagal koneksi ke port {saved_port}: {str(e)}")
+            
+            # Fallback ke mode cek apakah mode dummy aktif
+            if os.path.exists("dummy_arduino.flag"):
+                print("\n✅ Menggunakan mode dummy Arduino untuk pushbutton")
+                print("ℹ️ Tekan tombol '1' pada keyboard untuk simulasi button press")
+                self.button_mode = "dummy"
+                self.button = None
+                return
+                
             button_config = self.config['button']
             if button_config['type'] == 'serial':
                 # Coba koneksi langsung ke port yang dikonfigurasi
@@ -355,6 +441,7 @@ Last Connected: {self.connection_status['last_connected']}
                         logger.info(f"Koneksi serial ke pushbutton berhasil di port {button_config['port']}")
                         print(f"✅ Pushbutton terhubung di port {button_config['port']}")
                         print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
+                        self.button_mode = "serial"
                     else:
                         raise Exception("Tidak ada respons dari perangkat")
                         
@@ -378,43 +465,92 @@ Last Connected: {self.connection_status['last_connected']}
                                     if response:
                                         print(f"✅ Pushbutton ditemukan di port {test_port}")
                                         print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
+                                        self.button_mode = "serial"
                                         return
                                 except:
                                     continue
                     else:
                         print(f"\n⚠️ Gagal koneksi ke port {button_config['port']}: {str(e)}")
-                    raise Exception(f"Gagal koneksi ke pushbutton: {str(e)}")
+                    
+                    # Jika semua koneksi gagal, gunakan mode dummy
+                    print("\n✅ Menggunakan mode dummy Arduino untuk pushbutton (fallback)")
+                    print("ℹ️ Tekan tombol '1' pada keyboard untuk simulasi button press")
+                    self.button_mode = "dummy"
+                    self.button = None
+                    return
             else:
                 raise Exception(f"Tipe button {button_config['type']} tidak didukung")
                 
         except Exception as e:
             logger.error(f"Gagal setup pushbutton: {str(e)}")
-            raise Exception(f"Gagal setup pushbutton: {str(e)}")
+            # Gunakan mode dummy sebagai fallback
+            print("\n✅ Menggunakan mode dummy Arduino untuk pushbutton (error fallback)")
+            print("ℹ️ Tekan tombol '1' pada keyboard untuk simulasi button press")
+            self.button_mode = "dummy"
+            self.button = None
 
     def check_button(self):
         """Cek status pushbutton dengan debounce dan toleransi"""
         try:
+            # Jika mode dummy, cek keyboard input '1'
+            if hasattr(self, 'button_mode') and self.button_mode == "dummy":
+                import msvcrt
+                if msvcrt.kbhit():
+                    key = msvcrt.getch().decode('utf-8', errors='ignore')
+                    current_time = time.time()
+                    
+                    # Debug log
+                    if key:
+                        logger.debug(f"Keyboard input diterima: {repr(key)}")
+                    
+                    # Cek apakah sudah melewati waktu debounce
+                    if current_time - self.last_button_press >= self.debounce_delay:
+                        # Cek keyboard input '1' untuk simulasi button press
+                        if key == '1':
+                            self.last_button_press = current_time
+                            logger.info("Tombol dummy terdeteksi (keyboard '1')")
+                            print("\n✅ Tombol '1' terdeteksi - memproses...")
+                            return True
+                    else:
+                        # Jika masih dalam masa debounce, tampilkan sisa waktu
+                        remaining = self.debounce_delay - (current_time - self.last_button_press)
+                        if key == '1':  # Hanya tampilkan jika ada aktivitas tombol
+                            print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...\n")
+                            logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
+                return False
+            
+            # Mode serial (normal) - Arduino
+            # Bersihkan buffer terlebih dahulu jika terlalu banyak data
+            if self.button.in_waiting > 50:
+                logger.warning(f"Buffer overflow: {self.button.in_waiting} bytes, membersihkan buffer")
+                self.button.reset_input_buffer()
+                return False
+                
+            # Cek apakah ada data
             if self.button.in_waiting:
                 # Baca semua data yang tersedia di buffer
-                data = self.button.read_all().decode().strip()
+                data = self.button.read_all().decode(errors='ignore').strip()
                 current_time = time.time()
                 
-                # Debug log
+                # Debug log untuk semua data
                 if data:
                     logger.debug(f"Data tombol diterima: {repr(data)}")
+                    print(f"\nData dari Arduino: {repr(data)}")
                 
                 # Cek apakah sudah melewati waktu debounce
                 if current_time - self.last_button_press >= self.debounce_delay:
                     # Cek berbagai kemungkinan input yang valid
-                    if any(x in data for x in ['1', 'true', 'True', 'HIGH']):
+                    if any(str(x) in data for x in range(1, 10)) or any(x in data for x in ['1', 'true', 'True', 'HIGH', 'READY']):
                         self.last_button_press = current_time
-                        logger.info("Tombol terdeteksi dengan benar")
+                        logger.info(f"Tombol terdeteksi: {repr(data)}")
+                        print("\n✅ Tombol Arduino terdeteksi - memproses...")
                         return True
                     else:
-                        # Jika ada data tapi tidak valid, coba proses juga
+                        # Jika ada data tapi tidak valid, coba proses juga jika tidak kosong
                         if data:
                             logger.info(f"Tombol terdeteksi dengan data tidak standar: {repr(data)}")
                             self.last_button_press = current_time
+                            print("\n✅ Tombol Arduino terdeteksi (data non-standar) - memproses...")
                             return True
                 else:
                     # Jika masih dalam masa debounce, tampilkan sisa waktu
@@ -422,10 +558,23 @@ Last Connected: {self.connection_status['last_connected']}
                     if data:  # Hanya tampilkan jika ada aktivitas tombol
                         print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...\n")
                         logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
-                        
+            
+            # Coba polling aktif untuk Arduino
+            # Kirim sinyal 'check' setiap 2 detik untuk mendapatkan status
+            if hasattr(self, '_last_poll_time'):
+                if time.time() - self._last_poll_time > 2:
+                    try:
+                        self.button.write(b'check\n')
+                        self._last_poll_time = time.time()
+                    except:
+                        pass
+            else:
+                self._last_poll_time = time.time()
+                
             return False
         except Exception as e:
             logger.error(f"Error membaca pushbutton: {str(e)}")
+            self.last_button_press = time.time()  # Hindari error beruntun
             return False
 
     def setup_printer(self):
@@ -469,6 +618,25 @@ Last Connected: {self.connection_status['last_connected']}
         self.counter += 1
         self.save_counter()
         return self.counter
+
+    def check_printer_ready(self):
+        """Check if printer is ready before printing"""
+        try:
+            # Simple check - rely on win32print
+            if not self.printer_available:
+                return False
+                
+            # Try to get printer status
+            try:
+                printer_handle = win32print.OpenPrinter(self.printer_name)
+                win32print.ClosePrinter(printer_handle)
+                return True
+            except Exception as e:
+                logger.error(f"Printer not ready: {e}")
+                return False
+        except Exception as e:
+            logger.error(f"Error checking printer status: {e}")
+            return False
 
     def print_ticket(self, filename):
         """Cetak tiket dengan barcode CODE39"""
@@ -559,46 +727,127 @@ Last Connected: {self.connection_status['last_connected']}
             print(f"❌ Error saat mencetak tiket: {str(e)}")
 
     def setup_database(self):
-        """Setup koneksi ke database PostgreSQL"""
+        """Setup koneksi ke database atau API"""
         try:
-            db_config = self.config['database']
-            self.db_conn = psycopg2.connect(
-                dbname=db_config['dbname'],
-                user=db_config['user'],
-                password=db_config['password'],
-                host=db_config['host']
-            )
-            logger.info("Koneksi ke database berhasil")
-            print("✅ Database terkoneksi")
+            # Cek apakah psycopg2 tersedia
+            if not PSYCOPG2_AVAILABLE:
+                logger.warning("Modul psycopg2 tidak tersedia, menggunakan mode API atau dummy")
+                print("⚠️ Modul database tidak tersedia, mencoba API...")
+                self.db_mode = "api"
+                
+                # Coba koneksi ke API
+                try:
+                    api_url = f"http://{API_SERVER}:{API_PORT}{API_ENDPOINT}/test"
+                    response = requests.get(api_url, timeout=5)
+                    if response.status_code == 200:
+                        print(f"✅ API terkoneksi ke {API_SERVER}")
+                        logger.info(f"Koneksi API berhasil ke {API_SERVER}")
+                        return True
+                    else:
+                        raise Exception(f"API status code: {response.status_code}")
+                except Exception as api_error:
+                    logger.warning(f"Koneksi API gagal: {str(api_error)}")
+                    print(f"⚠️ Koneksi API gagal, menggunakan mode dummy")
+                    self.db_mode = "dummy"
+                    return True
+            
+            # Coba koneksi database ke server jika psycopg2 tersedia
+            try:
+                # Koneksi langsung ke PostgreSQL
+                self.db_conn = psycopg2.connect(
+                    host=DB_SERVER,
+                    port=DB_PORT,
+                    dbname=DB_NAME,
+                    user=DB_USER,
+                    password=DB_PASSWORD
+                )
+                print(f"✅ Database terkoneksi ke {DB_SERVER}")
+                logger.info(f"Koneksi database berhasil ke {DB_SERVER}")
+                self.db_mode = "direct"
+                return True
+            except Exception as db_error:
+                # Jika koneksi database gagal, gunakan API
+                logger.warning(f"Koneksi database PostgreSQL gagal: {str(db_error)}")
+                print(f"⚠️ Koneksi database gagal, mencoba API...")
+                
+                # Test API
+                api_url = f"http://{API_SERVER}:{API_PORT}{API_ENDPOINT}/test"
+                response = requests.get(api_url, timeout=5)
+                if response.status_code == 200:
+                    print(f"✅ API terkoneksi ke {API_SERVER}")
+                    logger.info(f"Koneksi API berhasil ke {API_SERVER}")
+                    self.db_mode = "api"
+                    return True
+                else:
+                    raise Exception(f"API status code: {response.status_code}")
         except Exception as e:
-            logger.error(f"Gagal koneksi ke database: {str(e)}")
-            raise Exception(f"Gagal koneksi ke database: {str(e)}")
-
+            # Fallback ke mode dummy jika semua koneksi gagal
+            logger.error(f"Gagal koneksi ke database dan API: {str(e)}")
+            print(f"⚠️ Gagal koneksi ke server {DB_SERVER}, menggunakan mode dummy")
+            self.db_mode = "dummy"
+            return True
+            
     def save_to_database(self, ticket_number, image_path):
-        """Simpan data tiket ke database"""
+        """Simpan data tiket ke database atau API"""
         try:
-            cur = self.db_conn.cursor()
+            if self.db_mode == "direct" and PSYCOPG2_AVAILABLE:
+                # Koneksi langsung ke PostgreSQL
+                cur = self.db_conn.cursor()
+                
+                # Baca file gambar sebagai binary
+                with open(image_path, 'rb') as f:
+                    image_data = f.read()
+                
+                # Query untuk insert data
+                sql = """
+                INSERT INTO tickets (ticket_number, capture_time, image_data) 
+                VALUES (%s, %s, %s)
+                """
+                
+                # Eksekusi query
+                cur.execute(sql, (ticket_number, datetime.now(), psycopg2.Binary(image_data)))
+                self.db_conn.commit()
+                cur.close()
+                
+                logger.info(f"Data tiket {ticket_number} berhasil disimpan ke database")
+                print("✅ Data tersimpan di database")
+                return True
+                
+            elif self.db_mode == "api":
+                # Kirim data melalui API
+                api_url = f"http://{API_SERVER}:{API_PORT}{API_ENDPOINT}"
+                
+                # Kirim file gambar
+                files = {'image': open(image_path, 'rb')}
+                data = {'ticket_number': ticket_number, 'timestamp': datetime.now().isoformat()}
+                
+                try:
+                    response = requests.post(api_url, files=files, data=data, timeout=10)
+                    if response.status_code == 200:
+                        logger.info(f"Data tiket {ticket_number} berhasil dikirim ke API")
+                        print("✅ Data terkirim ke API server")
+                        return True
+                    else:
+                        logger.error(f"API error: {response.status_code} - {response.text}")
+                        print(f"❌ API error: {response.status_code}")
+                        # Fallback ke mode dummy jika API gagal
+                        self.db_mode = "dummy"
+                except Exception as api_error:
+                    logger.error(f"Gagal mengirim ke API: {str(api_error)}")
+                    print(f"❌ Gagal mengirim ke API: Connection error")
+                    # Fallback ke mode dummy
+                    self.db_mode = "dummy"
             
-            # Query untuk insert data
-            sql = """
-            INSERT INTO public."CaptureTickets" 
-            ("TicketNumber", "ImagePath") 
-            VALUES (%s, %s)
-            """
-            
-            # Eksekusi query
-            cur.execute(sql, (ticket_number, image_path))
-            self.db_conn.commit()
-            
-            logger.info(f"Data tiket {ticket_number} berhasil disimpan ke database")
-            print("✅ Data tersimpan di database")
-            
+            # Mode dummy (jika semua koneksi gagal atau awalnya diset dummy)
+            if self.db_mode == "dummy":
+                logger.info(f"[DUMMY MODE] Data tiket {ticket_number} disimulasikan tersimpan")
+                print("✅ Data tersimpan (mode dummy)")
+                return True
+                
         except Exception as e:
-            logger.error(f"Gagal menyimpan ke database: {str(e)}")
-            print(f"❌ Gagal menyimpan ke database: {str(e)}")
-            self.db_conn.rollback()
-        finally:
-            cur.close()
+            logger.error(f"Gagal menyimpan data: {str(e)}")
+            print(f"❌ Gagal menyimpan data: {str(e)}")
+            return False
 
     def process_button_press(self):
         """Proses ketika tombol ditekan - ambil gambar, cetak tiket, dan simpan ke database"""
@@ -659,26 +908,29 @@ Last Connected: {self.connection_status['last_connected']}
             print(f"\n❌ Error saat memproses: {str(e)}\n")
 
     def cleanup(self):
-        """Bersihkan resources"""
+        """Cleanup resources"""
         try:
             if hasattr(self, 'camera') and self.camera is not None:
                 self.camera.release()
-            if hasattr(self, 'button'):
+                
+            # Hanya tutup koneksi serial jika bukan mode dummy
+            if hasattr(self, 'button_mode') and self.button_mode != "dummy" and hasattr(self, 'button') and self.button is not None:
                 self.button.close()
-            if hasattr(self, 'db_conn'):
-                self.db_conn.close()
+                
             logger.info("Cleanup berhasil")
         except Exception as e:
             logger.error(f"Error during cleanup: {str(e)}")
 
     def run(self):
         """Main loop program"""
-        print("""
+        button_mode_str = "Dummy (Keyboard)" if hasattr(self, 'button_mode') and self.button_mode == "dummy" else "Pushbutton (Arduino)"
+        
+        print(f"""
 ================================
     SISTEM PARKIR RSI BNA    
 ================================
-Mode: Pushbutton (Tanpa Kamera)
-Status: Menunggu input dari pushbutton...
+Mode: {button_mode_str} (Tanpa Kamera)
+Status: Menunggu input dari {"keyboard (tekan '1')" if hasattr(self, 'button_mode') and self.button_mode == "dummy" else "pushbutton"}...
 
         """)
         

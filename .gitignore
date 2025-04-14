@@ -1,1 +1,6 @@
-capture_images/ 
+capture_images/
+__pycache__/
+*.pyc
+capture_images_backup/
+C:\AAA\capture_images_backup/
+C:/AAA/capture_images_backup/ 

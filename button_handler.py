@@ -6,6 +6,7 @@ import random
 import serial
 import requests
 import json
+from printer_monitor import PrinterMonitor
 
 # Setup logging
 logging.basicConfig(
@@ -31,6 +32,7 @@ class ParkingButton:
         self.offline_counter = self._load_counter()
         self.running = False
         self.arduino = None
+        self.printer_monitor = PrinterMonitor()  # Initialize printer monitor
         self._try_connect_arduino()
         logger.info(f"Initialized with printer: {self.printer_name}")
         
@@ -91,9 +93,41 @@ class ParkingButton:
             logger.error(f"Error getting ticket from server: {e}")
         return None
             
+    def _check_printer_ready(self):
+        """Check if printer is ready before printing"""
+        try:
+            # Run printer checks
+            self.printer_monitor.run_checks()
+            
+            # Check printer status
+            if not self.printer_monitor.check_printer_status():
+                logger.error("Printer is not ready")
+                return False
+                
+            # Check system resources
+            if not self.printer_monitor.check_system_resources():
+                logger.error("System resources are too high")
+                return False
+                
+            # Check active print jobs
+            active_jobs = self.printer_monitor.monitor_print_jobs()
+            if active_jobs > 0:
+                logger.warning(f"Found {active_jobs} active print jobs")
+                return False
+                
+            return True
+        except Exception as e:
+            logger.error(f"Error checking printer status: {e}")
+            return False
+
     def _print_ticket(self, ticket_data, is_offline=False):
         """Print parking ticket using thermal printer"""
         try:
+            # Check printer status before printing
+            if not self._check_printer_ready():
+                logger.error("Printer is not ready for printing")
+                return False
+
             printer_handle = win32print.OpenPrinter(self.printer_name)
             job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
             win32print.StartPagePrinter(printer_handle)

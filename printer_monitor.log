@@ -1,0 +1,8 @@
+2025-04-14 20:55:30,629 - INFO - Printer monitor initialized for EPSON TM-T82X Receipt
+2025-04-14 20:55:30,630 - INFO - Kamera dilewati - menggunakan dummy mode
+2025-04-14 20:55:32,734 - INFO - Koneksi serial ke pushbutton berhasil di port COM7
+2025-04-14 20:55:33,748 - ERROR - Tidak dapat menemukan printer
+2025-04-14 20:55:33,748 - ERROR - Gagal setup printer
+2025-04-14 20:55:33,875 - INFO - API connection test successful: {'success': True, 'message': 'Connection successful', 'timestamp': '2025-04-14T20:55:34.2568735+07:00', 'server': 'pop-os'}
+2025-04-14 20:55:33,875 - INFO - Successfully connected to API
+2025-04-14 20:55:33,877 - INFO - Sistem parkir berhasil diinisialisasi
