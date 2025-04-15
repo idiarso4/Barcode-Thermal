@@ -1,0 +1,83 @@
+{% extends 'parking_manager/base.html' %}
+
+{% block title %}Manajemen Voucher{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row mb-3">
+        <div class="col">
+            <h2><i class="fas fa-ticket-alt"></i> Manajemen Voucher</h2>
+        </div>
+        <div class="col text-end">
+            <a href="{% url 'voucher_create' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Buat Voucher Baru
+            </a>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Kode</th>
+                            <th>Tipe</th>
+                            <th>Nilai</th>
+                            <th>Penggunaan</th>
+                            <th>Berlaku Sampai</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for voucher in vouchers %}
+                        <tr>
+                            <td>{{ voucher.code }}</td>
+                            <td>{{ voucher.get_voucher_type_display }}</td>
+                            <td>
+                                {% if voucher.voucher_type == 'FIXED' %}
+                                Rp {{ voucher.amount|floatformat:0 }}
+                                {% else %}
+                                {{ voucher.amount }}%
+                                {% endif %}
+                            </td>
+                            <td>{{ voucher.used_count }}/{{ voucher.max_usage }}</td>
+                            <td>{{ voucher.valid_until|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                {% if voucher.is_valid %}
+                                <span class="badge bg-success">Aktif</span>
+                                {% else %}
+                                <span class="badge bg-danger">Tidak Aktif</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'voucher_edit' voucher.id %}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <a href="{% url 'voucher_toggle' voucher.id %}" class="btn btn-sm btn-warning">
+                                        {% if voucher.is_active %}
+                                        <i class="fas fa-toggle-off"></i>
+                                        {% else %}
+                                        <i class="fas fa-toggle-on"></i>
+                                        {% endif %}
+                                    </a>
+                                    <a href="{% url 'voucher_delete' voucher.id %}" class="btn btn-sm btn-danger">
+                                        <i class="fas fa-trash"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">Belum ada voucher</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

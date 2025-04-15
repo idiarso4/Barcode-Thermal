@@ -1,0 +1,184 @@
+{% extends 'parking_manager/base.html' %}
+{% load static %}
+
+{% block title %}Laporan Keuangan{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Laporan Keuangan</h2>
+    
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-4">
+                    <label for="date_range" class="form-label">Rentang Waktu</label>
+                    <select name="date_range" id="date_range" class="form-select">
+                        <option value="30" {% if date_range == '30' %}selected{% endif %}>30 Hari Terakhir</option>
+                        <option value="7" {% if date_range == '7' %}selected{% endif %}>7 Hari Terakhir</option>
+                        <option value="365" {% if date_range == '365' %}selected{% endif %}>1 Tahun</option>
+                    </select>
+                </div>
+                <div class="col-md-4 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary">Terapkan Filter</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Pendapatan</h5>
+                    <p class="card-text h3">Rp {{ summary.total_revenue|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Transaksi</h5>
+                    <p class="card-text h3">{{ summary.total_transactions }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Rata-rata Biaya</h5>
+                    <p class="card-text h3">Rp {{ summary.average_fee|floatformat:0 }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Total Kendaraan</h5>
+                    <p class="card-text h3">{{ summary.total_vehicles }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Pendapatan Harian</h5>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Distribusi Jenis Kendaraan</h5>
+                    <canvas id="vehicleChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+                    <h5 class="card-title">Metode Pembayaran</h5>
+                    <canvas id="paymentMethodChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Button -->
+    <div class="mb-4">
+        <a href="{% url 'export_report' %}?date_range={{ date_range }}" class="btn btn-success">
+            <i class="fas fa-file-excel"></i> Export ke Excel
+        </a>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Daily Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'line',
+        data: {
+            labels: {{ chart_data.revenue.labels|safe }},
+            datasets: [{
+                label: 'Pendapatan Harian',
+                data: {{ chart_data.revenue.data|safe }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Vehicle Distribution Chart
+    const vehicleCtx = document.getElementById('vehicleChart').getContext('2d');
+    new Chart(vehicleCtx, {
+        type: 'pie',
+        data: {
+            labels: {{ chart_data.vehicle_types.labels|safe }},
+            datasets: [{
+                data: {{ chart_data.vehicle_types.data|safe }},
+                backgroundColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 205, 86)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+
+    // Payment Method Chart
+    const paymentCtx = document.getElementById('paymentMethodChart').getContext('2d');
+    new Chart(paymentCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_data.payment_methods.labels|safe }},
+            datasets: [{
+                label: 'Jumlah Transaksi',
+                data: {{ chart_data.payment_methods.data|safe }},
+                backgroundColor: 'rgb(75, 192, 192)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

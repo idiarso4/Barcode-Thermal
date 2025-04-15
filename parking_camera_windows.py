@@ -14,6 +14,7 @@ import win32print
 import psycopg2
 from psycopg2 import Error
 import random
+import msvcrt
 
 # Setup logging
 logging.basicConfig(
@@ -45,6 +46,7 @@ class ParkingCamera:
         # Tambahkan state untuk debounce
         self.last_button_press = 0
         self.debounce_delay = 0.5
+        self.button_mode = "keyboard"  # Default to keyboard mode
         
         # Add additional timing parameters
         self.camera_initialization_delay = 2.0
@@ -75,6 +77,13 @@ class ParkingCamera:
         self.min_image_diff = 0.15
         self.check_similar_images = False
         
+        self.load_counter = 0
+        self.last_capture_time = 0
+        self.button_state = False
+        self.last_button_state = False
+        self.last_debounce_time = 0
+        self.debounce_delay = 50  # ms
+        
         logger.info("Sistem parkir berhasil diinisialisasi")
 
     def load_config(self):
@@ -99,10 +108,19 @@ class ParkingCamera:
         try:
             print("\nMencoba koneksi ke kamera...")
             
-            # Coba beberapa device kamera (0-3)
-            for i in range(4):
+            # Coba koneksi ke kamera IP terlebih dahulu
+            if self.config['camera']['type'] == 'ip':
                 try:
-                    self.camera = cv2.VideoCapture(i)
+                    ip = self.config['camera']['ip']
+                    username = self.config['camera']['username']
+                    password = self.config['camera']['password']
+                    main_stream = self.config['camera']['main_stream']
+                    
+                    # Format URL RTSP
+                    rtsp_url = main_stream.format(username=username, password=password, ip=ip)
+                    print(f"Mencoba koneksi ke kamera IP {ip}...")
+                    
+                    self.camera = cv2.VideoCapture(rtsp_url)
                     if self.camera.isOpened():
                         # Set resolusi kamera
                         width = int(self.config['image']['width'])
@@ -113,10 +131,42 @@ class ParkingCamera:
                         # Test ambil gambar
                         ret, frame = self.camera.read()
                         if ret:
-                            print(f"✅ Kamera terdeteksi pada device {i}")
+                            print(f"✅ Kamera IP terdeteksi")
                             print(f"✅ Resolusi: {width}x{height}")
                             self.connection_status['is_connected'] = True
                             self.connection_status['last_connected'] = datetime.now()
+                            self.connection_status['camera_type'] = 'IP Dahua'
+                            return
+                        else:
+                            self.camera.release()
+                            raise Exception("Gagal membaca frame dari kamera IP")
+                    else:
+                        raise Exception("Gagal membuka koneksi RTSP")
+                    
+                except Exception as e:
+                    logger.error(f"Gagal koneksi ke kamera IP: {str(e)}")
+                    print(f"❌ Error koneksi kamera IP: {str(e)}")
+            
+            # Jika kamera IP gagal atau tidak dikonfigurasi, coba kamera lokal
+            print("\nMencoba kamera lokal...")
+            for i in range(4):
+                try:
+                    self.camera = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+                    if self.camera.isOpened():
+                        # Set resolusi kamera
+                        width = int(self.config['image']['width'])
+                        height = int(self.config['image']['height'])
+                        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+                        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+                        
+                        # Test ambil gambar
+                        ret, frame = self.camera.read()
+                        if ret:
+                            print(f"✅ Kamera lokal terdeteksi pada device {i}")
+                            print(f"✅ Resolusi: {width}x{height}")
+                            self.connection_status['is_connected'] = True
+                            self.connection_status['last_connected'] = datetime.now()
+                            self.connection_status['camera_type'] = 'Local'
                             return
                         else:
                             self.camera.release()
@@ -128,36 +178,13 @@ class ParkingCamera:
             print("\n⚠️ Tidak ada kamera yang terdeteksi")
             print("✅ Beralih ke mode dummy")
             self.camera = None
+            self.connection_status['is_connected'] = False
+            self.connection_status['camera_type'] = 'Dummy'
             return
-            
+                
         except Exception as e:
             logger.error(f"Error setting up camera: {str(e)}")
             raise Exception(f"Gagal setup kamera: {str(e)}")
-
-    def images_are_different(self, img1, img2):
-        """
-        Membandingkan dua gambar untuk menentukan apakah objek berbeda
-        Returns: True jika gambar cukup berbeda (kendaraan berbeda)
-        """
-        try:
-            # Convert ke grayscale
-            gray1 = cv2.cvtColor(img1, cv2.COLOR_BGR2GRAY)
-            gray2 = cv2.cvtColor(img2, cv2.COLOR_BGR2GRAY)
-
-            # Hitung perbedaan
-            diff = cv2.absdiff(gray1, gray2)
-            
-            # Hitung persentase perbedaan
-            total_pixels = diff.shape[0] * diff.shape[1]
-            different_pixels = np.count_nonzero(diff > 30)  # threshold 30
-            difference_ratio = different_pixels / total_pixels
-
-            logger.info(f"Perbedaan gambar: {difference_ratio:.2%}")
-            return difference_ratio > self.min_image_diff
-
-        except Exception as e:
-            logger.error(f"Error comparing images: {str(e)}")
-            return True  # Jika error, anggap berbeda untuk safety
 
     def capture_image(self):
         """Ambil gambar dari kamera atau generate dummy image"""
@@ -179,12 +206,25 @@ class ParkingCamera:
                 # Ambil gambar
                 ret, frame = self.camera.read()
                 if ret:
-                    # Simpan gambar dengan kompresi
-                    cv2.imwrite(filepath, frame, [
-                        cv2.IMWRITE_JPEG_QUALITY, 90,
-                        cv2.IMWRITE_JPEG_OPTIMIZE, 1
-                    ])
-                    print(f"✅ Gambar disimpan: {filename}")
+                    # Resize gambar untuk mengurangi ukuran file
+                    scale_percent = 50  # Kurangi ukuran 50%
+                    width = int(frame.shape[1] * scale_percent / 100)
+                    height = int(frame.shape[0] * scale_percent / 100)
+                    frame = cv2.resize(frame, (width, height))
+                    
+                    # Kompres gambar dengan kualitas lebih rendah
+                    encode_param = [
+                        cv2.IMWRITE_JPEG_QUALITY, 60,  # Kualitas JPEG 60%
+                        cv2.IMWRITE_JPEG_OPTIMIZE, 1,
+                        cv2.IMWRITE_JPEG_PROGRESSIVE, 1
+                    ]
+                    
+                    # Simpan gambar dengan kompresi tinggi
+                    cv2.imwrite(filepath, frame, encode_param)
+                    
+                    # Cek ukuran file
+                    file_size = os.path.getsize(filepath) / 1024  # Size in KB
+                    print(f"✅ Gambar disimpan: {filename} ({file_size:.1f} KB)")
                     
                     # Simpan metadata
                     metadata = {
@@ -192,9 +232,10 @@ class ParkingCamera:
                         "counter": counter,
                         "mode": "camera",
                         "resolution": {
-                            "width": frame.shape[1],
-                            "height": frame.shape[0]
-                        }
+                            "width": width,
+                            "height": height
+                        },
+                        "file_size": f"{file_size:.1f} KB"
                     }
                     
                     with open(filepath + ".json", 'w') as f:
@@ -247,229 +288,21 @@ class ParkingCamera:
             
             self.last_capture_time = time.time()
             return True, filename
-            
+
         except Exception as e:
             logger.error(f"Error capturing image: {str(e)}")
             return False, None
 
-    def load_counter(self):
-        """Load atau inisialisasi counter untuk nomor urut file"""
-        try:
-            if os.path.exists(self.counter_file):
-                with open(self.counter_file, 'r') as f:
-                    self.counter = int(f.read().strip())
-            else:
-                self.counter = 0
-                self.save_counter()
-        except Exception as e:
-            logger.error(f"Error loading counter: {str(e)}")
-            self.counter = 0
-
-    def save_counter(self):
-        """Simpan nilai counter ke file"""
-        try:
-            with open(self.counter_file, 'w') as f:
-                f.write(str(self.counter))
-        except Exception as e:
-            logger.error(f"Error saving counter: {str(e)}")
-
-    def save_metadata(self, filename, shape):
-        """Simpan metadata gambar"""
-        try:
-            metadata = {
-                'filename': filename,
-                'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
-                'resolution': {
-                    'width': shape[1],
-                    'height': shape[0],
-                    'channels': shape[2]
-                },
-                'camera_info': {
-                    'ip': self.config['camera']['ip'],
-                    'connection_status': {
-                        'is_connected': self.connection_status['is_connected'],
-                        'last_connected': self.connection_status['last_connected'].strftime('%Y-%m-%d %H:%M:%S') if self.connection_status['last_connected'] else None,
-                        'reconnect_attempts': self.connection_status['reconnect_attempts'],
-                        'current_url': self.connection_status['current_url']
-                    }
-                }
-            }
-            
-            metadata_file = os.path.join(self.capture_dir, f"{filename}.json")
-            with open(metadata_file, 'w') as f:
-                json.dump(metadata, f, indent=4)
-                
-            logger.info(f"Metadata tersimpan: {metadata_file}")
-            
-        except Exception as e:
-            logger.error(f"Gagal menyimpan metadata: {str(e)}")
-
-    def check_storage(self):
-        """Cek kapasitas storage"""
-        try:
-            total, used, free = shutil.disk_usage(self.base_dir)
-            free_gb = free // (2**30)  # Convert to GB
-            min_free_space = float(self.config['storage']['min_free_space_gb'])
-            
-            if free_gb < min_free_space:
-                logger.warning(f"Storage tersisa kurang dari {min_free_space}GB: {free_gb}GB")
-                print(f"\n⚠️ Peringatan: Storage tersisa {free_gb}GB")
-                return False
-            return True
-        except Exception as e:
-            logger.error(f"Error checking storage: {str(e)}")
-            return False
-
-    def display_status(self):
-        """Tampilkan status sistem"""
-        status = f"""
-Status Sistem:
--------------
-Kamera: {'Terhubung' if self.connection_status['is_connected'] else 'Terputus'}
-IP: {self.config['camera']['ip']}
-Resolusi: {self.config['image']['width']}x{self.config['image']['height']}
-Total Gambar: {self.counter}
-Last Connected: {self.connection_status['last_connected']}
-"""
-        print(status)
-
     def setup_button(self):
-        """Setup koneksi ke pushbutton melalui serial"""
+        """Setup push button connection"""
+        logging.info("\nMencoba koneksi ke pushbutton di port COM7...")
         try:
-            # Import msvcrt di sini untuk handle keyboard
-            global msvcrt
-            import msvcrt
-            
-            button_config = self.config['button']
-            if button_config['type'] == 'serial':
-                # Coba koneksi langsung ke port yang dikonfigurasi
-                try:
-                    print(f"\nMencoba koneksi ke pushbutton di port {button_config['port']}...")
-                    self.button = serial.Serial(
-                        port=button_config['port'],
-                        baudrate=int(button_config['baudrate']),
-                        timeout=0.1
-                    )
-                    
-                    # Tunggu Arduino siap
-                    time.sleep(2)
-                    
-                    # Bersihkan buffer
-                    self.button.reset_input_buffer()
-                    self.button.reset_output_buffer()
-                    
-                    # Test koneksi dengan mengirim perintah
-                    self.button.write(b'TEST\n')
-                    time.sleep(0.1)
-                    response = self.button.readline().decode().strip()
-                    
-                    if response:
-                        logger.info(f"Koneksi serial ke pushbutton berhasil di port {button_config['port']}")
-                        print(f"✅ Pushbutton terhubung di port {button_config['port']}")
-                        print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
-                        print("ℹ️ Atau tekan tombol '1' pada keyboard untuk mengaktifkan gate")
-                        self.button_mode = "serial"
-                        
-                        # Kirim inisialisasi ke Arduino
-                        self.button.write(b'INIT\n')
-                        logger.info("Sinyal inisialisasi dikirim ke Arduino")
-                        return
-                    else:
-                        print("⚠️ Tidak ada respons dari perangkat")
-                        print("ℹ️ Push button tidak terdeteksi, tapi Anda tetap bisa menggunakan tombol '1'")
-                        self.button_mode = "simulation"
-                        if hasattr(self, 'button'):
-                            self.button.close()
-                        return
-                        
-                except serial.SerialException as e:
-                    print(f"\n⚠️ Error koneksi push button: {str(e)}")
-                    print("ℹ️ Anda tetap bisa menggunakan tombol '1' pada keyboard")
-                    self.button_mode = "simulation"
-                    return
-            else:
-                print("⚠️ Mode pushbutton tidak dikenali")
-                print("ℹ️ Anda tetap bisa menggunakan tombol '1' pada keyboard")
-                self.button_mode = "simulation"
-                return
-                
+            self.button = serial.Serial('COM7', 9600, timeout=1)
+            logging.info("✅ Push button terkoneksi")
         except Exception as e:
-            logger.error(f"Setup pushbutton warning: {str(e)}")
-            print("⚠️ Terjadi error pada setup push button")
-            print("ℹ️ Anda tetap bisa menggunakan tombol '1' pada keyboard")
-            self.button_mode = "simulation"
-
-    def check_button(self):
-        """Cek status pushbutton dan keyboard dengan debounce dan toleransi"""
-        try:
-            current_time = time.time()
-            button_pressed = False
-            
-            # Cek keyboard input
-            if msvcrt.kbhit():
-                key = msvcrt.getch()
-                if key == b'1':  # Jika tombol '1' ditekan
-                    print("\n⌨️ Tombol '1' terdeteksi")
-                    if current_time - self.last_button_press >= self.debounce_delay:
-                        self.last_button_press = current_time
-                        button_pressed = True
-                        logger.info("Tombol keyboard '1' terdeteksi")
-                        # Kirim sinyal ke Arduino untuk mengangkat gate
-                        if self.button_mode == "serial" and hasattr(self, 'button'):
-                            try:
-                                self.button.write(b'OPEN\n')  # Kirim perintah ke Arduino
-                                print("🔄 Mengirim sinyal buka gate...")
-                                logger.info("Sinyal buka gate dikirim dari keyboard")
-                            except Exception as e:
-                                logger.error(f"Gagal mengirim sinyal ke Arduino: {str(e)}")
-            
-            # Cek pushbutton fisik
-            if self.button_mode == "serial" and self.button.in_waiting:
-                data = self.button.read_all().decode().strip()
-                
-                # Debug log
-                if data:
-                    logger.debug(f"Data tombol diterima: {repr(data)}")
-                
-                # Cek apakah sudah melewati waktu debounce
-                if current_time - self.last_button_press >= self.debounce_delay:
-                    # Reset buffer setelah membaca
-                    self.button.reset_input_buffer()
-                    
-                    # Cek berbagai kemungkinan input yang valid
-                    if any(x in data for x in ['1', 'true', 'True', 'HIGH']):
-                        print("\n🔘 Push button fisik terdeteksi")
-                        self.last_button_press = current_time
-                        button_pressed = True
-                        logger.info("Push button terdeteksi dengan benar")
-                        # Kirim konfirmasi ke Arduino
-                        try:
-                            self.button.write(b'ACK\n')  # Acknowledge signal received
-                            logger.info("Sinyal ACK dikirim ke Arduino")
-                        except Exception as e:
-                            logger.error(f"Gagal mengirim ACK: {str(e)}")
-                    else:
-                        # Jika ada data tapi tidak valid, coba proses juga
-                        if data:
-                            print("\n🔘 Push button terdeteksi (data tidak standar)")
-                            logger.info(f"Push button terdeteksi dengan data tidak standar: {repr(data)}")
-                            self.last_button_press = current_time
-                            button_pressed = True
-                else:
-                    # Jika masih dalam masa debounce, bersihkan buffer
-                    self.button.reset_input_buffer()
-                    
-                    # Tampilkan sisa waktu jika ada aktivitas tombol
-                    if data:
-                        remaining = self.debounce_delay - (current_time - self.last_button_press)
-                        print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...")
-                        logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
-            
-            return button_pressed
-            
-        except Exception as e:
-            logger.error(f"Error membaca input: {str(e)}")
-            return False
+            logging.warning(f"\n⚠️ Error koneksi push button: {str(e)}")
+            logging.info("ℹ️ Menggunakan keyboard sebagai input alternatif (tekan '1')")
+            self.button = None
 
     def setup_printer(self):
         """Setup printer thermal menggunakan win32print"""
@@ -507,114 +340,6 @@ Last Connected: {self.connection_status['last_connected']}
             print(f"\n❌ Setup printer error: {str(e)}")
             self.printer_available = False
 
-    def get_counter(self):
-        """Get dan increment counter"""
-        self.counter += 1
-        self.save_counter()
-        return self.counter
-
-    def print_ticket(self, filename):
-        """Cetak tiket dengan barcode CODE39"""
-        printer_handle = None
-        try:
-            if not self.printer_available:
-                print("❌ Printer tidak tersedia")
-                return
-                
-            # Buka printer
-            print("\nMembuka koneksi printer...")
-            printer_handle = win32print.OpenPrinter(self.printer_name)
-            print("✅ Berhasil membuka koneksi printer")
-            
-            # Mulai dokumen baru
-            print("Memulai dokumen baru...")
-            job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
-            win32print.StartPagePrinter(printer_handle)
-            
-            # Parse data tiket
-            timestamp = datetime.now()
-            ticket_number = filename.replace('.jpg','')
-            simple_number = ticket_number.split('_')[1] if '_' in ticket_number else ticket_number
-            
-            # Siapkan data untuk dicetak - gunakan format yang lebih sederhana
-            print_data = bytearray()
-            
-            # Reset dan inisialisasi printer
-            print_data += b"\x1B\x40"  # Initialize printer
-            
-            # Set mode printer
-            print_data += b"\x1B\x21\x00"  # Normal text mode
-            print_data += b"\x1B\x61\x01"  # Center alignment
-            
-            # Header
-            print_data += b"\x1B\x21\x30"  # Double width & height
-            print_data += b"RSI BANJARNEGARA\n"
-            print_data += b"TIKET PARKIR\n"
-            print_data += b"\x1B\x21\x00"  # Normal text
-            print_data += b"================================\n"
-            
-            # Informasi tiket (left align)
-            print_data += b"\x1B\x61\x00"  # Left alignment
-            print_data += f"Nomor : {ticket_number}\n".encode()
-            print_data += f"Waktu : {timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n".encode()
-            print_data += b"================================\n"
-            
-            # Barcode (center)
-            print_data += b"\x1B\x61\x01"  # Center alignment
-            print_data += b"\x1D\x68\x50"  # Barcode height
-            print_data += b"\x1D\x77\x02"  # Barcode width
-            print_data += b"\x1D\x48\x02"  # HRI below barcode
-            print_data += b"\x1D\x6B\x04"  # CODE39
-            print_data += bytes([len(simple_number)])
-            print_data += simple_number.encode()
-            
-            # Footer
-            print_data += b"\n\n"
-            print_data += b"Terima kasih\n"
-            print_data += b"Jangan hilangkan tiket ini\n\n"
-            
-            # Kirim data ke printer
-            print("Mengirim data ke printer...")
-            
-            # Kirim dalam satu operasi
-            result = win32print.WritePrinter(printer_handle, print_data)
-            print(f"Data terkirim: {result} bytes")
-            
-            # Tunggu sebentar
-            time.sleep(0.5)
-            
-            # Feed dan cut
-            print("Memotong tiket...")
-            cut_command = bytearray()
-            cut_command += b"\x1B\x64\x03"  # Feed 3 lines
-            cut_command += b"\x1D\x56\x41"  # Full cut
-            win32print.WritePrinter(printer_handle, cut_command)
-            
-            # Tunggu proses selesai
-            time.sleep(1)
-            
-            # Tutup printer dengan benar
-            print("Menutup koneksi printer...")
-            win32print.EndPagePrinter(printer_handle)
-            win32print.EndDocPrinter(printer_handle)
-            win32print.ClosePrinter(printer_handle)
-            printer_handle = None
-            
-            print("✅ Tiket berhasil dicetak")
-            
-        except Exception as e:
-            logger.error(f"Error printing ticket: {str(e)}")
-            print(f"❌ Error saat mencetak tiket: {str(e)}")
-            
-            # Cleanup jika terjadi error
-            if printer_handle:
-                try:
-                    win32print.EndPagePrinter(printer_handle)
-                    win32print.EndDocPrinter(printer_handle)
-                    win32print.ClosePrinter(printer_handle)
-                except:
-                    pass
-
     def setup_database(self):
         """Setup koneksi ke database PostgreSQL"""
         self.db_conn = None
@@ -632,6 +357,10 @@ Last Connected: {self.connection_status['last_connected']}
                 password=db_config['password'],
                 host=db_config['host']
             )
+            
+            # Buat tabel jika belum ada
+            self.create_tables()
+            
             logger.info("Koneksi ke database berhasil")
             print("✅ Database terkoneksi")
         except Exception as e:
@@ -639,47 +368,156 @@ Last Connected: {self.connection_status['last_connected']}
             print(f"ℹ️ Mode tanpa database aktif - {str(e)}")
             self.db_conn = None
 
-    def save_to_database(self, ticket_number, image_path):
-        """Simpan data tiket ke database"""
-        if self.db_conn is None:
-            logger.info("Database tidak tersedia, menyimpan data secara lokal saja")
-            print("ℹ️ Database tidak digunakan - data disimpan lokal")
+    def create_tables(self):
+        """Buat tabel yang diperlukan jika belum ada"""
+        if not self.db_conn:
             return
-
+            
         try:
-            cur = self.db_conn.cursor()
+            cursor = self.db_conn.cursor()
             
-            # Query untuk insert data
-            sql = """
-            INSERT INTO public."CaptureTickets" 
-            ("TicketNumber", "ImagePath") 
-            VALUES (%s, %s)
-            """
+            # Buat tabel tickets
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS tickets (
+                    id SERIAL PRIMARY KEY,
+                    ticket_id VARCHAR(50) UNIQUE NOT NULL,
+                    entry_time TIMESTAMP NOT NULL,
+                    exit_time TIMESTAMP,
+                    image_path VARCHAR(255),
+                    status VARCHAR(20) NOT NULL,
+                    vehicle_type VARCHAR(20),
+                    license_plate VARCHAR(20),
+                    fee INTEGER DEFAULT 0,
+                    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+                    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
+                )
+            """)
             
-            # Eksekusi query
-            cur.execute(sql, (ticket_number, image_path))
             self.db_conn.commit()
-            
-            logger.info(f"Data tiket {ticket_number} berhasil disimpan ke database")
-            print("✅ Data tersimpan di database")
+            cursor.close()
+            logger.info("Tabel tickets berhasil dibuat/diperiksa")
             
         except Exception as e:
-            logger.error(f"Gagal menyimpan ke database: {str(e)}")
-            print(f"⚠️ Gagal menyimpan ke database: {str(e)}")
+            logger.error(f"Error creating tables: {str(e)}")
             if self.db_conn:
-                try:
-                    self.db_conn.rollback()
-                except:
-                    pass
+                self.db_conn.rollback()
+
+    def print_ticket(self, ticket_id):
+        """Cetak tiket parkir"""
+        if not self.printer_available:
+            print("❌ Printer tidak tersedia")
+            return False
+            
+        try:
+            # Buka printer
+            printer_handle = win32print.OpenPrinter(self.printer_name)
+            
+            # Format tiket
+            ticket_text = f"""
+================================
+    TIKET PARKIR RSI BNA
+================================
+
+Nomor: {ticket_id}
+Tanggal: {datetime.now().strftime('%d/%m/%Y')}
+Jam Masuk: {datetime.now().strftime('%H:%M:%S')}
+
+--------------------------------
+Simpan tiket ini dengan baik.
+Kehilangan tiket dikenakan
+denda sesuai ketentuan.
+================================
+
+"""
+            # Cetak tiket
+            job = win32print.StartDocPrinter(printer_handle, 1, ("Tiket Parkir", None, "RAW"))
+            win32print.StartPagePrinter(printer_handle)
+            win32print.WritePrinter(printer_handle, ticket_text.encode('utf-8'))
+            win32print.EndPagePrinter(printer_handle)
+            win32print.EndDocPrinter(printer_handle)
+            win32print.ClosePrinter(printer_handle)
+            
+            print("✅ Tiket berhasil dicetak")
+            logger.info(f"Tiket {ticket_id} berhasil dicetak")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Gagal mencetak tiket: {str(e)}")
+            logger.error(f"Print error: {str(e)}")
+            return False
+
+    def run(self):
+        """Main loop program"""
+        print("""
+================================
+    SISTEM PARKIR RSI BNA    
+================================
+""")
+        if self.connection_status['camera_type'] == 'IP Dahua':
+            print("Mode: Kamera IP Dahua")
+            print(f"IP: {self.config['camera']['ip']}")
+            print(f"Resolution: 1920x1080 (Main) / 704x576 (Sub)")
+        else:
+            print("Mode: Pushbutton (Tanpa Kamera)")
+            
+        print("Status: Menunggu input dari pushbutton...")
+        print()
+        
+        try:
+            while True:
+                if self.check_button():  # Pushbutton ditekan
+                    self.process_button_press()
+                
+                # Delay kecil untuk mengurangi CPU usage
+                time.sleep(self.button_check_interval)
+                
+        except KeyboardInterrupt:
+            print("\nProgram dihentikan...")
         finally:
-            if 'cur' in locals() and cur:
-                cur.close()
+            self.cleanup()
+
+    def check_button(self):
+        """Cek status pushbutton dan keyboard dengan debounce dan toleransi"""
+        try:
+            current_time = time.time()
+            button_pressed = False
+            
+            # Cek keyboard input
+            if msvcrt.kbhit():
+                key = msvcrt.getch()
+                if key == b'1':  # Jika tombol '1' ditekan
+                    print("\n⌨️ Tombol '1' terdeteksi")
+                    if current_time - self.last_button_press >= self.debounce_delay:
+                        self.last_button_press = current_time
+                        button_pressed = True
+                        logger.info("Tombol keyboard '1' terdeteksi")
+                        return True
+                    else:
+                        remaining = self.debounce_delay - (current_time - self.last_button_press)
+                        print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...")
+                        return False
+            
+            # Cek pushbutton fisik jika tersedia
+            if hasattr(self, 'button') and self.button is not None and self.button.in_waiting:
+                data = self.button.read_all().decode().strip()
+                if data and current_time - self.last_button_press >= self.debounce_delay:
+                    print("\n🔘 Push button fisik terdeteksi")
+                    self.last_button_press = current_time
+                    button_pressed = True
+                    logger.info("Push button terdeteksi")
+                    return True
+                    
+            return button_pressed
+            
+        except Exception as e:
+            logger.error(f"Error membaca input: {str(e)}")
+            return False
 
     def process_button_press(self):
         """Proses ketika tombol ditekan - ambil gambar, cetak tiket, dan simpan ke database"""
         try:
             # Tambah delay kecil untuk stabilisasi
-            time.sleep(0.1)  # Kurangi dari 0.2 detik menjadi 0.1 detik untuk stabilisasi kamera
+            time.sleep(0.1)
             
             print("\n\nMemproses... Mohon tunggu...\n")
             print("1. Mengambil gambar...")
@@ -689,16 +527,10 @@ Last Connected: {self.connection_status['last_connected']}
             current_time = time.time()
             if hasattr(self, 'last_capture_time') and self.last_capture_time:
                 time_since_last = current_time - self.last_capture_time
-                if time_since_last < 0.5:  # Kurangi dari 1 menjadi 0.5 detik antara capture
+                if time_since_last < 0.5:  # Minimal jeda 0.5 detik antara capture
                     print("⚠️ Terlalu cepat! Mohon tunggu...\n")
                     logger.warning(f"Capture terlalu cepat, interval: {time_since_last:.1f}s")
                     return
-            
-            # Jangan coba membaca frame jika kamera adalah None
-            if self.camera is not None:
-                # Ambil beberapa frame untuk stabilisasi
-                for _ in range(3):  # Ambil 3 frame untuk stabilisasi
-                    self.camera.read()
             
             # Ambil gambar
             success, filename = self.capture_image()
@@ -717,12 +549,12 @@ Last Connected: {self.connection_status['last_connected']}
                 print(f"\n3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
                 if self.printer_available:
                     print("\n4. Mencoba cetak tiket...")
-                    self.print_ticket(filename)
+                    self.print_ticket(ticket_number)
                 else:
                     print("\n❌ Printer tidak tersedia, tiket tidak bisa dicetak")
                 
                 # Tambah delay setelah proses selesai
-                time.sleep(0.1)  # Kurangi dari 0.2 detik menjadi 0.1 detik setelah proses
+                time.sleep(0.1)
                 print("\n\nStatus: Menunggu input berikutnya...\n")
                 logger.info("Proses capture selesai dengan sukses")
             else:
@@ -738,7 +570,7 @@ Last Connected: {self.connection_status['last_connected']}
         try:
             if hasattr(self, 'camera') and self.camera is not None:
                 self.camera.release()
-            if hasattr(self, 'button'):
+            if hasattr(self, 'button') and self.button_mode == "serial":
                 self.button.close()
             if hasattr(self, 'db_conn') and self.db_conn is not None:
                 self.db_conn.close()
@@ -746,29 +578,58 @@ Last Connected: {self.connection_status['last_connected']}
         except Exception as e:
             logger.error(f"Error during cleanup: {str(e)}")
 
-    def run(self):
-        """Main loop program"""
-        print("""
-================================
-    SISTEM PARKIR RSI BNA    
-================================
-Mode: Pushbutton (Tanpa Kamera)
-Status: Menunggu input dari pushbutton...
-
-        """)
-        
+    def load_counter(self):
+        """Load ticket counter from file"""
         try:
-            while True:
-                if self.check_button():  # Pushbutton ditekan
-                    self.process_button_press()
-                
-                # Delay kecil untuk mengurangi CPU usage
-                time.sleep(self.button_check_interval)
-                
-        except KeyboardInterrupt:
-            print("\nProgram dihentikan...")
-        finally:
-            self.cleanup()
+            if os.path.exists(self.counter_file):
+                with open(self.counter_file, 'r') as f:
+                    self.counter = int(f.read().strip())
+            else:
+                self.counter = 0
+                with open(self.counter_file, 'w') as f:
+                    f.write(str(self.counter))
+            logger.info(f"Counter loaded: {self.counter}")
+        except Exception as e:
+            logger.error(f"Error loading counter: {str(e)}")
+            self.counter = 0
+
+    def save_to_database(self, ticket_number, image_path):
+        """Simpan data tiket ke database"""
+        if not self.db_conn:
+            print("ℹ️ Mode tanpa database aktif")
+            return
+            
+        try:
+            cursor = self.db_conn.cursor()
+            
+            # Buat query insert
+            query = """
+                INSERT INTO tickets 
+                (ticket_id, entry_time, image_path, status, created_at, updated_at)
+                VALUES (%s, %s, %s, %s, NOW(), NOW())
+            """
+            
+            # Data yang akan disimpan
+            data = (
+                ticket_number,
+                datetime.now(),
+                image_path,
+                'ACTIVE'
+            )
+            
+            # Eksekusi query
+            cursor.execute(query, data)
+            self.db_conn.commit()
+            cursor.close()
+            
+            print("✅ Data tiket berhasil disimpan ke database")
+            logger.info(f"Tiket {ticket_number} berhasil disimpan ke database")
+            
+        except Exception as e:
+            print(f"⚠️ Gagal menyimpan ke database: {str(e)}")
+            logger.error(f"Database error: {str(e)}")
+            if self.db_conn:
+                self.db_conn.rollback()
 
 if __name__ == "__main__":
     try:

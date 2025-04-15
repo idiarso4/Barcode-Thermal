@@ -1,0 +1,126 @@
+{% extends 'parking_manager/base.html' %}
+{% load static %}
+
+{% block title %}Daftar Transaksi{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">Daftar Transaksi</h2>
+
+    <!-- Filter Form -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    <label for="start_date" class="form-label">Tanggal Mulai</label>
+                    <input type="date" class="form-control" id="start_date" name="start_date" 
+                           value="{{ filters.start_date|default:'' }}">
+                </div>
+                <div class="col-md-3">
+                    <label for="end_date" class="form-label">Tanggal Akhir</label>
+                    <input type="date" class="form-control" id="end_date" name="end_date" 
+                           value="{{ filters.end_date|default:'' }}">
+                </div>
+                <div class="col-md-2">
+                    <label for="payment_method" class="form-label">Metode Pembayaran</label>
+                    <select class="form-select" id="payment_method" name="payment_method">
+                        <option value="">Semua</option>
+                        {% for method in payment_methods %}
+                        <option value="{{ method }}" {% if filters.payment_method == method %}selected{% endif %}>
+                            {{ method }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="vehicle_type" class="form-label">Jenis Kendaraan</label>
+                    <select class="form-select" id="vehicle_type" name="vehicle_type">
+                        <option value="">Semua</option>
+                        {% for type in vehicle_types %}
+                        <option value="{{ type }}" {% if filters.vehicle_type == type %}selected{% endif %}>
+                            {{ type }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <label for="sort" class="form-label">Urutkan</label>
+                    <select class="form-select" id="sort" name="sort">
+                        <option value="-timestamp" {% if filters.sort_by == '-timestamp' %}selected{% endif %}>
+                            Terbaru
+                        </option>
+                        <option value="timestamp" {% if filters.sort_by == 'timestamp' %}selected{% endif %}>
+                            Terlama
+                        </option>
+                        <option value="-amount" {% if filters.sort_by == '-amount' %}selected{% endif %}>
+                            Nominal Tertinggi
+                        </option>
+                        <option value="amount" {% if filters.sort_by == 'amount' %}selected{% endif %}>
+                            Nominal Terendah
+                        </option>
+                    </select>
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-filter"></i> Filter
+                    </button>
+                    <a href="{% url 'transaction_list' %}" class="btn btn-secondary">
+                        <i class="fas fa-sync"></i> Reset
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th>ID Transaksi</th>
+                            <th>Tanggal</th>
+                            <th>Plat Nomor</th>
+                            <th>Jenis Kendaraan</th>
+                            <th>Metode Pembayaran</th>
+                            <th>Nominal</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for transaction in transactions %}
+                        <tr>
+                            <td>{{ transaction.transaction_id }}</td>
+                            <td>{{ transaction.timestamp|date:"d/m/Y H:i" }}</td>
+                            <td>{{ transaction.ticket.vehicle.license_plate }}</td>
+                            <td>{{ transaction.ticket.vehicle.vehicle_type }}</td>
+                            <td>{{ transaction.get_payment_method_display }}</td>
+                            <td>Rp {{ transaction.amount|floatformat:0 }}</td>
+                            <td>
+                                {% if transaction.is_completed %}
+                                <span class="badge bg-success">Selesai</span>
+                                {% else %}
+                                <span class="badge bg-warning">Pending</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <a href="{% url 'transaction_detail' transaction_id=transaction.id %}" 
+                                   class="btn btn-sm btn-info">
+                                    <i class="fas fa-eye"></i> Detail
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">Tidak ada transaksi yang ditemukan</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

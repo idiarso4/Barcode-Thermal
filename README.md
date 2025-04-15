@@ -1,130 +1,89 @@
 # Sistem Parkir RSI BNA
 
-Sistem parkir otomatis dengan kamera CCTV dan printer thermal untuk RSI Banjarnegara.
-
-## Fitur
-
-- Capture gambar kendaraan otomatis menggunakan kamera CCTV Dahua
-- Cetak tiket parkir menggunakan printer thermal
-- Input menggunakan pushbutton
-- Penyimpanan data di database PostgreSQL
-- Antarmuka yang mudah digunakan
-- Logging sistem untuk monitoring dan troubleshooting
+Sistem manajemen parkir dengan fitur:
+- Capture kamera otomatis
+- Cetak tiket thermal
+- Deteksi kendaraan dengan loop detector
+- Manajemen database tiket parkir
+- Laporan keuangan
 
 ## Persyaratan Sistem
 
-- Windows 10/11
 - Python 3.8+
-- PostgreSQL Database Server
-- Kamera CCTV Dahua (RTSP support)
-- Printer Thermal (EPSON TM-T82X atau kompatibel)
-- Arduino dengan pushbutton
-
-## Persyaratan Python
-
-```
-opencv-python
-numpy
-pyserial
-psycopg2
-requests
-pywin32
-```
-
-## Konfigurasi
-
-1. Salin `config.ini.example` ke `config.ini`
-2. Sesuaikan konfigurasi berikut:
-
-```ini
-[camera]
-rtsp_url = rtsp://admin:password@ip_address:554/cam/realmonitor?channel=1&subtype=0
-
-[database]
-host = localhost
-port = 5432
-dbname = parkir2
-user = postgres
-password = your_password
-
-[serial]
-port = COM7
-baudrate = 9600
-```
+- PostgreSQL Database
+- Printer Thermal EPSON TM-T82X
+- Kamera IP Dahua / Kamera USB
+- Arduino (untuk loop detector)
 
 ## Instalasi
 
-1. Clone repository:
+1. Clone repository ini
 ```bash
-git clone https://github.com/idiarso4/Barcode-Thermal.git
-cd Barcode-Thermal
+git clone https://github.com/username/parking-system.git
+cd parking-system
 ```
 
-2. Install dependencies:
+2. Install dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Setup database:
+3. Buat file konfigurasi
 ```bash
-python db_test.py
+cp config.example.ini config.ini
 ```
+Edit `config.ini` sesuai dengan konfigurasi sistem Anda.
 
-4. Jalankan aplikasi:
+4. Buat database PostgreSQL dan sesuaikan konfigurasi di `config.ini`
+
+## Penggunaan
+
+1. Jalankan program
 ```bash
 python parking_camera_windows.py
 ```
 
-## Penggunaan
+2. Sistem akan:
+   - Mendeteksi kamera
+   - Mendeteksi printer
+   - Terhubung ke database
+   - Menunggu input dari push button/keyboard
 
-1. Pastikan semua perangkat terhubung:
-   - Kamera CCTV dapat diakses melalui RTSP
-   - Printer thermal terpasang dan diset sebagai default printer
-   - Arduino dengan pushbutton terhubung ke port serial yang benar
+3. Saat kendaraan masuk:
+   - Tekan tombol fisik atau '1' pada keyboard
+   - Sistem akan mengambil gambar
+   - Menyimpan data ke database
+   - Mencetak tiket
 
-2. Jalankan aplikasi:
-   - Program akan mendeteksi kamera, printer, dan pushbutton secara otomatis
-   - Status koneksi akan ditampilkan di console
-   - Sistem siap menerima input dari pushbutton
+## Konfigurasi
 
-3. Proses parkir:
-   - Tekan pushbutton untuk memulai proses
-   - Sistem akan mengambil gambar dari kamera
-   - Tiket parkir akan dicetak otomatis
-   - Data disimpan ke database
+File `config.ini` berisi pengaturan untuk:
+- Kamera (IP/Local)
+- Database
+- Printer
+- Path penyimpanan
+- Dan lainnya
 
 ## Troubleshooting
 
-### Kamera tidak terdeteksi
-- Periksa koneksi jaringan ke kamera
-- Pastikan URL RTSP benar
-- Periksa username dan password kamera
+1. Kamera tidak terdeteksi:
+   - Periksa koneksi kamera
+   - Pastikan IP dan kredensial benar
+   - Coba restart kamera
 
-### Printer tidak berfungsi
-- Pastikan printer terhubung dan menyala
-- Set printer sebagai default printer Windows
-- Periksa ketersediaan kertas
-- Restart aplikasi jika diperlukan
+2. Printer error:
+   - Pastikan printer menyala dan terhubung
+   - Cek ketersediaan kertas
+   - Restart print spooler service
 
-### Pushbutton tidak merespon
-- Periksa koneksi kabel Arduino
-- Pastikan port COM yang benar di config.ini
-- Periksa baudrate (default: 9600)
-
-## Struktur Direktori
-
-```
-├── parking_camera_windows.py    # Program utama
-├── config.ini                   # File konfigurasi
-├── requirements.txt             # Dependency Python
-├── db_test.py                  # Setup database
-├── capture_images/             # Folder penyimpanan gambar
-└── logs/                       # File log sistem
-```
+3. Database error:
+   - Periksa koneksi database
+   - Pastikan service PostgreSQL berjalan
+   - Verifikasi kredensial database
 
 ## Lisensi
 
-Copyright © 2024 RSI Banjarnegara. All rights reserved.
+Copyright © 2024 RSI BNA. All rights reserved.
 
 ## Kontak
 

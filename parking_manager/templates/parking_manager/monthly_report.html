@@ -1,0 +1,156 @@
+{% extends 'parking_manager/base.html' %}
+{% load static %}
+
+{% block title %}Laporan Bulanan - {{ month_name }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Laporan Bulanan - {{ month_name }}</h2>
+        <div>
+            <a href="{% url 'export_report' %}?year={{ year }}&month={{ month }}" class="btn btn-success">
+                <i class="fas fa-file-excel"></i> Export ke Excel
+            </a>
+        </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Pendapatan</h5>
+                    <p class="card-text h3">Rp {{ summary.total_revenue|floatformat:0|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Transaksi</h5>
+                    <p class="card-text h3">{{ summary.total_transactions|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Rata-rata Biaya</h5>
+                    <p class="card-text h3">Rp {{ summary.average_fee|floatformat:0|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5 class="card-title">Total Kendaraan</h5>
+                    <p class="card-text h3">{{ summary.total_vehicles|default:"0" }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Daily Revenue Chart -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">Pendapatan Harian - {{ month_name }}</h5>
+            <canvas id="dailyRevenueChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Navigation Links -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between">
+                        {% with prev_month=month|add:"-1" prev_year=year %}
+                        {% if prev_month == 0 %}
+                            {% with prev_month=12 prev_year=year|add:"-1" %}
+                            <a href="{% url 'monthly_report' year=prev_year month=prev_month %}" class="btn btn-outline-primary">
+                                <i class="fas fa-chevron-left"></i> Bulan Sebelumnya
+                            </a>
+                            {% endwith %}
+                        {% else %}
+                            <a href="{% url 'monthly_report' year=prev_year month=prev_month %}" class="btn btn-outline-primary">
+                                <i class="fas fa-chevron-left"></i> Bulan Sebelumnya
+                            </a>
+                        {% endif %}
+                        {% endwith %}
+
+                        {% with next_month=month|add:"1" next_year=year %}
+                        {% if next_month == 13 %}
+                            {% with next_month=1 next_year=year|add:"1" %}
+                            <a href="{% url 'monthly_report' year=next_year month=next_month %}" class="btn btn-outline-primary">
+                                Bulan Berikutnya <i class="fas fa-chevron-right"></i>
+                            </a>
+                            {% endwith %}
+                        {% else %}
+                            <a href="{% url 'monthly_report' year=next_year month=next_month %}" class="btn btn-outline-primary">
+                                Bulan Berikutnya <i class="fas fa-chevron-right"></i>
+                            </a>
+                        {% endif %}
+                        {% endwith %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart Data -->
+<script type="application/json" id="chartData">
+    {
+        "labels": {{ revenue_data.labels|safe }},
+        "data": {{ revenue_data.data|safe }}
+    }
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Get chart data from JSON
+    const chartDataElement = document.getElementById('chartData');
+    const chartData = JSON.parse(chartDataElement.textContent);
+    
+    // Daily Revenue Chart
+    const dailyRevenueCtx = document.getElementById('dailyRevenueChart').getContext('2d');
+    new Chart(dailyRevenueCtx, {
+        type: 'line',
+        data: {
+            labels: chartData.labels,
+            datasets: [{
+                label: 'Pendapatan Harian',
+                data: chartData.data,
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                tension: 0.1,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'Rp ' + value.toLocaleString();
+                        }
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return 'Pendapatan: Rp ' + context.raw.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %} 

@@ -1,0 +1,235 @@
+{% extends 'parking_manager/base.html' %}
+
+{% block title %}Proses Pembayaran{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="fas fa-money-bill"></i> Proses Pembayaran</h4>
+            </div>
+            <div class="card-body">
+                <div class="ticket-info mb-4">
+                    <h5 class="card-title">Informasi Tiket</h5>
+                    <table class="table">
+                        <tr>
+                            <th width="30%">ID Tiket:</th>
+                            <td>{{ ticket.ticket_id }}</td>
+                        </tr>
+                        <tr>
+                            <th>Plat Nomor:</th>
+                            <td>{{ ticket.vehicle.license_plate }}</td>
+                        </tr>
+                        <tr>
+                            <th>Jenis Kendaraan:</th>
+                            <td>{{ ticket.vehicle.get_vehicle_type_display }}</td>
+                        </tr>
+                        {% if ticket.vehicle.membership %}
+                        <tr>
+                            <th>Membership:</th>
+                            <td>
+                                <span class="badge bg-{{ ticket.vehicle.membership.is_valid|yesno:'success,danger' }}">
+                                    {{ ticket.vehicle.membership.get_membership_type_display }}
+                                </span>
+                                {% if ticket.vehicle.membership.is_valid %}
+                                <small class="text-muted">
+                                    (Diskon {{ ticket.vehicle.membership.get_discount_percentage }}%)
+                                </small>
+                                {% else %}
+                                <small class="text-danger">(Tidak Aktif)</small>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Waktu Masuk:</th>
+                            <td>{{ ticket.entry_time|date:"d/m/Y H:i:s" }}</td>
+                        </tr>
+                        <tr>
+                            <th>Durasi:</th>
+                            <td>{{ duration }}</td>
+                        </tr>
+                        <tr>
+                            <th>Tarif Dasar:</th>
+                            <td>Rp <span id="baseFee">{{ ticket.calculate_base_fee|floatformat:0 }}</span></td>
+                        </tr>
+                        {% if ticket.vehicle.membership and ticket.vehicle.membership.is_valid %}
+                        <tr>
+                            <th>Diskon Member:</th>
+                            <td class="text-success">
+                                -Rp <span id="discount">{{ ticket.calculate_discount|floatformat:0 }}</span>
+                            </td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <th>Total Biaya:</th>
+                            <td><strong>Rp <span id="fee">{{ fee|floatformat:0 }}</span></strong></td>
+                        </tr>
+                    </table>
+                </div>
+
+                <form method="post" id="paymentForm">
+                    {% csrf_token %}
+                    <div class="mb-3">
+                        <label class="form-label">Jumlah Pembayaran</label>
+                        {{ form.amount }}
+                        {% if form.amount.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.amount.errors }}
+                        </div>
+                        {% endif %}
+                        <div class="form-text text-end">
+                            Kembalian: Rp <span id="change">0</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Metode Pembayaran</label>
+                        {{ form.payment_method }}
+                        {% if form.payment_method.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.payment_method.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Catatan (opsional)</label>
+                        {{ form.notes }}
+                        {% if form.notes.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.notes.errors }}
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2">
+                        <button type="submit" class="btn btn-primary" id="submitBtn">
+                            <i class="fas fa-check-circle"></i> Proses Pembayaran
+                        </button>
+                        <a href="{% url 'ticket_detail' ticket_id=ticket.ticket_id %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Kembali
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Preview Struk -->
+<div class="modal fade" id="receiptPreview" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Preview Struk</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="receipt-preview">
+                    <h4 class="text-center">STRUK PEMBAYARAN PARKIR</h4>
+                    <hr>
+                    <table class="table table-sm">
+                        <tr>
+                            <td>No. Tiket</td>
+                            <td>: {{ ticket.ticket_id }}</td>
+                        </tr>
+                        <tr>
+                            <td>Plat Nomor</td>
+                            <td>: {{ ticket.vehicle.license_plate }}</td>
+                        </tr>
+                        {% if ticket.vehicle.membership and ticket.vehicle.membership.is_valid %}
+                        <tr>
+                            <td>Membership</td>
+                            <td>: {{ ticket.vehicle.membership.get_membership_type_display }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td>Tarif Dasar</td>
+                            <td>: Rp <span id="previewBaseFee">{{ ticket.calculate_base_fee|floatformat:0 }}</span></td>
+                        </tr>
+                        {% if ticket.vehicle.membership and ticket.vehicle.membership.is_valid %}
+                        <tr>
+                            <td>Diskon Member</td>
+                            <td>: -Rp <span id="previewDiscount">{{ ticket.calculate_discount|floatformat:0 }}</span></td>
+                        </tr>
+                        {% endif %}
+                        <tr>
+                            <td>Total</td>
+                            <td>: Rp <span id="previewFee">{{ fee|floatformat:0 }}</span></td>
+                        </tr>
+                        <tr>
+                            <td>Dibayar</td>
+                            <td>: Rp <span id="previewPaid">0</span></td>
+                        </tr>
+                        <tr>
+                            <td>Kembalian</td>
+                            <td>: Rp <span id="previewChange">0</span></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+                <button type="button" class="btn btn-primary" onclick="document.getElementById('paymentForm').submit();">
+                    Konfirmasi & Cetak
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Auto-select amount field
+    $('#id_amount').focus();
+    
+    // Hitung kembalian otomatis
+    $('#id_amount').on('input', function() {
+        var amount = parseFloat($(this).val()) || 0;
+        var fee = parseFloat($('#fee').text().replace(/,/g, '')) || 0;
+        var change = amount - fee;
+        
+        $('#change').text(change.toLocaleString('id-ID'));
+        
+        // Update preview
+        $('#previewPaid').text(amount.toLocaleString('id-ID'));
+        $('#previewChange').text(change.toLocaleString('id-ID'));
+    });
+    
+    // Preview struk sebelum submit
+    $('#paymentForm').on('submit', function(e) {
+        var amount = parseFloat($('#id_amount').val()) || 0;
+        var fee = parseFloat($('#fee').text().replace(/,/g, '')) || 0;
+        
+        if (amount < fee) {
+            alert('Jumlah pembayaran kurang dari tarif yang ditetapkan');
+            e.preventDefault();
+            return false;
+        }
+        
+        // Tampilkan preview jika pembayaran tunai
+        if ($('#id_payment_method').val() === 'CASH') {
+            e.preventDefault();
+            $('#receiptPreview').modal('show');
+            return false;
+        }
+    });
+    
+    // Shortcut keyboard
+    $(document).on('keydown', function(e) {
+        // Alt + P untuk proses pembayaran
+        if (e.altKey && e.key === 'p') {
+            $('#submitBtn').click();
+        }
+        // Alt + B untuk kembali
+        if (e.altKey && e.key === 'b') {
+            window.location.href = "{% url 'ticket_detail' ticket_id=ticket.ticket_id %}";
+        }
+    });
+});
+</script>
+{% endblock %} 
