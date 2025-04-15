@@ -1,0 +1,42 @@
+2025-04-15 12:08:18,284 - INFO - Starting device scanner...
+2025-04-15 12:08:18,284 - INFO - Scanning for serial ports...
+2025-04-15 12:08:18,296 - INFO - Found serial ports:
+2025-04-15 12:08:18,296 - INFO - - COM1: Communications Port (COM1)
+2025-04-15 12:08:18,297 - INFO - - COM7: Arduino Uno (COM7)
+2025-04-15 12:08:18,297 - INFO -   ✅ Likely Arduino device: COM7
+2025-04-15 12:08:18,297 - INFO - Scanning for Windows printers...
+2025-04-15 12:08:18,417 - INFO - Found printers:
+2025-04-15 12:08:18,418 - INFO - - Send To OneNote 2010
+2025-04-15 12:08:18,418 - INFO -   Description: Send To OneNote 2010,Send To Microsoft OneNote 2010 Driver,
+2025-04-15 12:08:18,419 - INFO -   Comment: 
+2025-04-15 12:08:18,419 - INFO - - OneNote for Windows 10
+2025-04-15 12:08:18,419 - INFO -   Description: OneNote for Windows 10,Microsoft Software Printer Driver,
+2025-04-15 12:08:18,419 - INFO -   Comment: 
+2025-04-15 12:08:18,419 - INFO - - Microsoft XPS Document Writer
+2025-04-15 12:08:18,420 - INFO -   Description: Microsoft XPS Document Writer,Microsoft XPS Document Writer v4,
+2025-04-15 12:08:18,420 - INFO -   Comment: 
+2025-04-15 12:08:18,421 - INFO - - Microsoft Print to PDF
+2025-04-15 12:08:18,421 - INFO -   Description: Microsoft Print to PDF,Microsoft Print To PDF,
+2025-04-15 12:08:18,421 - INFO -   Comment: 
+2025-04-15 12:08:18,421 - INFO - - Fax
+2025-04-15 12:08:18,422 - INFO -   Description: Fax,Microsoft Shared Fax Driver,
+2025-04-15 12:08:18,424 - INFO -   Comment: 
+2025-04-15 12:08:18,425 - INFO - - EPSON TM-T82X Receipt (Default)
+2025-04-15 12:08:18,425 - INFO -   Description: EPSON TM-T82X Receipt,EPSON TM-T(203dpi) Receipt6,
+2025-04-15 12:08:18,426 - INFO -   Comment: 
+2025-04-15 12:08:18,427 - INFO - - AnyDesk Printer
+2025-04-15 12:08:18,430 - INFO -   Description: AnyDesk Printer,AnyDesk v4 Printer Driver,
+2025-04-15 12:08:18,430 - INFO -   Comment: 
+2025-04-15 12:08:18,432 - INFO - - \\10.0.13.48\EPSON L360 Series
+2025-04-15 12:08:18,433 - INFO -   Description: \\10.0.13.48\EPSON L360 Series,EPSON L360 Series,
+2025-04-15 12:08:18,433 - INFO -   Comment: 
+2025-04-15 12:08:18,433 - INFO - - \\10.0.13.62\EPSON L360 Series
+2025-04-15 12:08:18,434 - INFO -   Description: \\10.0.13.62\EPSON L360 Series,EPSON L360 Series,
+2025-04-15 12:08:18,434 - INFO -   Comment: 
+2025-04-15 12:08:18,434 - INFO - Testing default printer: EPSON TM-T82X Receipt
+2025-04-15 12:08:18,437 - INFO - ✅ Successfully connected to printer: EPSON TM-T82X Receipt
+2025-04-15 12:08:18,444 - INFO - Printer details:
+2025-04-15 12:08:18,444 - INFO - - Status: 0
+2025-04-15 12:08:18,445 - INFO - - Port: TMUSB001
+2025-04-15 12:08:18,445 - INFO - - Driver: EPSON TM-T(203dpi) Receipt6
+2025-04-15 12:08:18,448 - INFO - Scan complete. Check logs/device_scan_20250415_120818.log for details

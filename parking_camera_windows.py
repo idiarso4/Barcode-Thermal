@@ -43,7 +43,11 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 0.5  # Ubah dari 10.0 menjadi 0.5 detik delay antara press
+        self.debounce_delay = 3.0  # Increased to 3 seconds for more stability
+        
+        # Add additional timing parameters
+        self.camera_initialization_delay = 5.0  # Wait 5 seconds after camera initialization
+        self.button_check_interval = 0.5  # Check button every 0.5 seconds
         
         # Buat folder jika belum ada
         if not os.path.exists(self.capture_dir):

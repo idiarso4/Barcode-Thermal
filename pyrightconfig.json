@@ -1,0 +1,6 @@
+{
+    "venvPath": ".",
+    "venv": "myenv",
+    "reportMissingImports": false,
+    "reportMissingModuleSource": false
+} 

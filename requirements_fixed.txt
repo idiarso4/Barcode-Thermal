@@ -1,0 +1,12 @@
+opencv-python==4.8.0.76
+numpy==1.24.3
+pyserial==3.5
+psycopg2-binary==2.9.9
+requests==2.31.0
+pywin32==306
+Pillow==10.0.0
+python-barcode==0.14.0
+keyboard==0.13.5
+python-escpos==3.0a8
+pyusb==1.2.1
+imutils==0.5.4 

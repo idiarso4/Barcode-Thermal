@@ -37,12 +37,64 @@ class ParkingButton:
     def _try_connect_arduino(self):
         """Try to connect to Arduino, return True if successful"""
         try:
-            self.arduino = serial.Serial('COM7', 9600, timeout=1)
-            logger.info("Arduino connected successfully")
-            return True
+            # Close any existing connection
+            if self.arduino and self.arduino.is_open:
+                self.arduino.close()
+            
+            print(f"\nConnecting to Arduino on COM7 at 9600 baud...")
+            
+            # Add more robust connection settings
+            self.arduino = serial.Serial(
+                'COM7',
+                baudrate=9600,
+                timeout=2,
+                write_timeout=2,
+                bytesize=serial.EIGHTBITS,
+                parity=serial.PARITY_NONE,
+                stopbits=serial.STOPBITS_ONE
+            )
+            
+            # Give the Arduino time to initialize
+            print("Waiting for Arduino to initialize (2 seconds)...")
+            time.sleep(2)
+            
+            # Clear any existing data in the buffer
+            self.arduino.reset_input_buffer()
+            self.arduino.reset_output_buffer()
+            
+            # Wait for READY message
+            print("Waiting for READY message...")
+            response = self.arduino.readline().decode().strip()
+            
+            if response == "READY":
+                print("✅ Arduino is ready!")
+                logger.info("Arduino connected successfully and sent READY message")
+                return True
+            else:
+                print(f"⚠️ Unexpected response: {response}")
+                logger.warning(f"Arduino connected but sent unexpected response: {response}")
+                self.arduino.close()
+                return False
+                
         except Exception as e:
-            logger.warning(f"Could not connect to Arduino: {e}")
-            logger.info("Running in keyboard input mode")
+            print(f"❌ Connection failed: {str(e)}")
+            logger.error(f"Failed to connect to Arduino: {str(e)}")
+            if self.arduino and self.arduino.is_open:
+                self.arduino.close()
+            return False
+
+    def check_button(self):
+        """Check if button was pressed"""
+        try:
+            if self.arduino and self.arduino.is_open:
+                if self.arduino.in_waiting > 0:
+                    data = self.arduino.readline().decode().strip()
+                    if data == "1":
+                        logger.info("Button pressed detected")
+                        return True
+            return False
+        except Exception as e:
+            logger.error(f"Error checking button: {str(e)}")
             return False
 
     def _generate_plate_number(self):

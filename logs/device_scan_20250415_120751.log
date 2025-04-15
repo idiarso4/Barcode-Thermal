@@ -1,0 +1,11 @@
+2025-04-15 12:07:51,861 - INFO - Starting device scanner...
+2025-04-15 12:07:51,861 - INFO - Scanning for serial ports...
+2025-04-15 12:07:51,884 - INFO - Found serial ports:
+2025-04-15 12:07:51,885 - INFO - - COM1: Communications Port (COM1)
+2025-04-15 12:07:51,885 - INFO - - COM7: Arduino Uno (COM7)
+2025-04-15 12:07:51,907 - INFO - Scanning network 192.168.1.0/24 for printers...
+2025-04-15 12:07:51,908 - DEBUG - Running command: nmap -p9100,515,631,9101,9102 192.168.1.0/24
+2025-04-15 12:07:51,989 - ERROR - Nmap scan failed: 'nmap' is not recognized as an internal or external command,
+operable program or batch file.
+
+2025-04-15 12:07:51,990 - INFO - Scan complete. Check logs/device_scan_20250415_120751.log for details
