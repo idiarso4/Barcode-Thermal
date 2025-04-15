@@ -25,23 +25,9 @@ logger = logging.getLogger('parking_system')
 
 class ParkingCamera:
     def __init__(self):
-        # Konfigurasi kamera
-        self.camera_ip = "192.168.2.20"
-        self.camera_user = "admin"
-        self.camera_pass = "@dminparkir"
-        self.rtsp_url = f"rtsp://{self.camera_user}:{self.camera_pass}@{self.camera_ip}/cam/realmonitor?channel=1&subtype=0"
+        # Load konfigurasi
+        self.load_config()
         
-        # Konfigurasi capture
-        self.capture_dir = "capture"
-        self.image_quality = 60  # JPEG quality (1-100)
-        self.target_size = (800, 600)  # Ukuran gambar yang lebih kecil
-        
-        # Buat folder jika belum ada
-        if not os.path.exists(self.capture_dir):
-            os.makedirs(self.capture_dir)
-            logger.info(f"Folder capture dibuat: {self.capture_dir}")
-        
-        # Setup kamera
         # Inisialisasi folder dan file
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.capture_dir = os.path.join(self.base_dir, self.config['storage']['capture_dir'])
@@ -58,11 +44,11 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 0.5  # Turunkan dari 1.0 ke 0.5 detik untuk lebih responsif
+        self.debounce_delay = 0.5
         
         # Add additional timing parameters
-        self.camera_initialization_delay = 2.0  # Turunkan dari 5.0 ke 2.0 detik
-        self.button_check_interval = 0.05  # Turunkan dari 0.1 ke 0.05 untuk lebih responsif
+        self.camera_initialization_delay = 2.0
+        self.button_check_interval = 0.05
         
         # Buat folder jika belum ada
         if not os.path.exists(self.capture_dir):
@@ -86,18 +72,64 @@ class ParkingCamera:
         
         self.last_image = None
         self.last_capture_time = None
-        self.min_image_diff = 0.15  # Turunkan ke 15% perbedaan
-        self.check_similar_images = False  # Nonaktifkan pengecekan gambar yang mirip
+        self.min_image_diff = 0.15
+        self.check_similar_images = False
         
         logger.info("Sistem parkir berhasil diinisialisasi")
 
-    def setup_camera(self):
-        """Setup kamera - bisa mode dummy atau real camera"""
+    def load_config(self):
+        """Load konfigurasi dari file config.ini"""
         try:
-            print("\nMelewati inisialisasi kamera (mode dummy)...")
+            config = configparser.ConfigParser()
+            config.read('config.ini')
+            
+            # Validasi konfigurasi
+            required_sections = ['camera', 'image', 'storage', 'system']
+            for section in required_sections:
+                if section not in config:
+                    raise Exception(f"Bagian {section} tidak ditemukan dalam config.ini")
+            
+            self.config = config
+        except Exception as e:
+            logger.error(f"Error loading config: {str(e)}")
+            raise Exception(f"Gagal membaca konfigurasi: {str(e)}")
+
+    def setup_camera(self):
+        """Setup koneksi ke kamera"""
+        try:
+            print("\nMencoba koneksi ke kamera...")
+            
+            # Coba beberapa device kamera (0-3)
+            for i in range(4):
+                try:
+                    self.camera = cv2.VideoCapture(i)
+                    if self.camera.isOpened():
+                        # Set resolusi kamera
+                        width = int(self.config['image']['width'])
+                        height = int(self.config['image']['height'])
+                        self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, width)
+                        self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+                        
+                        # Test ambil gambar
+                        ret, frame = self.camera.read()
+                        if ret:
+                            print(f"✅ Kamera terdeteksi pada device {i}")
+                            print(f"✅ Resolusi: {width}x{height}")
+                            self.connection_status['is_connected'] = True
+                            self.connection_status['last_connected'] = datetime.now()
+                            return
+                        else:
+                            self.camera.release()
+                except Exception as e:
+                    logger.error(f"Gagal koneksi ke device {i}: {str(e)}")
+                    continue
+            
+            # Jika tidak ada kamera yang terdeteksi, gunakan mode dummy
+            print("\n⚠️ Tidak ada kamera yang terdeteksi")
+            print("✅ Beralih ke mode dummy")
             self.camera = None
-            print("✅ Mode dummy kamera aktif - tidak melakukan capture gambar sungguhan")
             return
+            
         except Exception as e:
             logger.error(f"Error setting up camera: {str(e)}")
             raise Exception(f"Gagal setup kamera: {str(e)}")
@@ -128,7 +160,7 @@ class ParkingCamera:
             return True  # Jika error, anggap berbeda untuk safety
 
     def capture_image(self):
-        """Capture gambar - mode dummy akan menghasilkan file kosong"""
+        """Ambil gambar dari kamera atau generate dummy image"""
         try:
             # Generate nama file berdasarkan timestamp
             timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
@@ -136,22 +168,82 @@ class ParkingCamera:
             filename = f"TKT{timestamp}_{counter}.jpg"
             filepath = os.path.join(self.capture_dir, filename)
             
-            # Dalam mode dummy, buat file kosong
-            with open(filepath, 'w') as f:
-                pass
+            if self.camera is not None and self.camera.isOpened():
+                print("📸 Mengambil gambar dari kamera...")
                 
-            # Buat file JSON dengan metadata
-            json_data = {
+                # Ambil beberapa frame untuk stabilisasi
+                for _ in range(3):
+                    self.camera.read()
+                    time.sleep(0.1)
+                
+                # Ambil gambar
+                ret, frame = self.camera.read()
+                if ret:
+                    # Simpan gambar dengan kompresi
+                    cv2.imwrite(filepath, frame, [
+                        cv2.IMWRITE_JPEG_QUALITY, 90,
+                        cv2.IMWRITE_JPEG_OPTIMIZE, 1
+                    ])
+                    print(f"✅ Gambar disimpan: {filename}")
+                    
+                    # Simpan metadata
+                    metadata = {
+                        "timestamp": timestamp,
+                        "counter": counter,
+                        "mode": "camera",
+                        "resolution": {
+                            "width": frame.shape[1],
+                            "height": frame.shape[0]
+                        }
+                    }
+                    
+                    with open(filepath + ".json", 'w') as f:
+                        json.dump(metadata, f, indent=4)
+                    
+                    self.last_capture_time = time.time()
+                    return True, filename
+                else:
+                    print("❌ Gagal mengambil gambar dari kamera")
+                    logger.error("Camera capture returned False")
+            
+            # Jika kamera tidak tersedia atau capture gagal, buat dummy image
+            print("📸 Menggunakan mode dummy (tanpa kamera)")
+            
+            # Buat dummy image dengan informasi
+            height = int(self.config['image']['height'])
+            width = int(self.config['image']['width'])
+            dummy_image = np.zeros((height, width, 3), dtype=np.uint8)
+            dummy_image.fill(255)  # Background putih
+            
+            # Tambahkan text ke gambar
+            cv2.putText(dummy_image, "DUMMY IMAGE - NO CAMERA", (50, 50),
+                       cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
+            cv2.putText(dummy_image, f"Ticket: {filename}", (50, 100),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+            cv2.putText(dummy_image, timestamp, (50, 150),
+                       cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
+            
+            # Simpan dummy image
+            cv2.imwrite(filepath, dummy_image, [
+                cv2.IMWRITE_JPEG_QUALITY, 90,
+                cv2.IMWRITE_JPEG_OPTIMIZE, 1
+            ])
+            
+            print(f"✅ File dummy disimpan: {filename}")
+            
+            # Simpan metadata
+            metadata = {
                 "timestamp": timestamp,
                 "counter": counter,
-                "mode": "dummy"
+                "mode": "dummy",
+                "resolution": {
+                    "width": width,
+                    "height": height
+                }
             }
             
             with open(filepath + ".json", 'w') as f:
-                json.dump(json_data, f, indent=4)
-                
-            print("✅ Menggunakan gambar dummy (tanpa kamera)")
-            print(f"✅ File dummy disimpan: {filename}")
+                json.dump(metadata, f, indent=4)
             
             self.last_capture_time = time.time()
             return True, filename
@@ -159,23 +251,6 @@ class ParkingCamera:
         except Exception as e:
             logger.error(f"Error capturing image: {str(e)}")
             return False, None
-
-    def load_config(self):
-        """Load konfigurasi dari file config.ini"""
-        try:
-            config = configparser.ConfigParser()
-            config.read('config.ini')
-            
-            # Validasi konfigurasi
-            required_sections = ['camera', 'image', 'storage', 'system']
-            for section in required_sections:
-                if section not in config:
-                    raise Exception(f"Bagian {section} tidak ditemukan dalam config.ini")
-            
-            return config
-        except Exception as e:
-            logger.error(f"Error loading config: {str(e)}")
-            raise Exception(f"Gagal membaca konfigurasi: {str(e)}")
 
     def load_counter(self):
         """Load atau inisialisasi counter untuk nomor urut file"""
