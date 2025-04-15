@@ -1,62 +1,119 @@
-const int buttonPin = 2;    // Pin for the push button
-const int relayPin = 3;     // Pin for the relay control
+#include <Arduino.h>
+
+/*
+ * Arduino Gate Control System
+ * ------------------------
+ * Controls gate and printer using:
+ * - Push button (Pin 2)
+ * - Serial input from PC
+ * - ATMega output signals (Pin 3,4)
+ * - LED indicators (Pin 12,13)
+ */
+
+// Pin definitions
+const int buttonPin = 2;     // Input pin untuk push button
+const int atmegaPin1 = 3;   // Output pin 1 ke ATMega (untuk push button)
+const int atmegaPin2 = 4;   // Output pin 2 ke ATMega (untuk keyboard)
+const int ledPin1 = 12;     // LED indikator untuk push button
+const int ledPin2 = 13;     // LED indikator untuk keyboard
 
 // Variables
-bool buttonState = HIGH;    // Current state of the button (HIGH with pull-up)
+bool buttonState = HIGH;     // Current state of the button (HIGH with pull-up)
 bool lastButtonState = HIGH; // Previous state of the button
-int counter = 1;            // Counter to track the sequential number
-unsigned long lastDebounceTime = 0; // Last time the button state changed
-unsigned long debounceDelay = 50;  // Debounce delay in milliseconds
+unsigned long lastDebounceTime = 0;
+unsigned long debounceDelay = 50;    // Debounce delay in milliseconds
+unsigned long signalDuration = 200;  // Durasi sinyal ke ATMega (ms)
 
 void setup() {
-  // Initialize Serial communication at 9600 baud rate
+  // Setup pin modes
+  pinMode(buttonPin, INPUT_PULLUP);    // Push button dengan pull-up
+  pinMode(atmegaPin1, OUTPUT);         // Output ke ATMega untuk push button
+  pinMode(atmegaPin2, OUTPUT);         // Output ke ATMega untuk keyboard
+  pinMode(ledPin1, OUTPUT);            // LED indikator push button
+  pinMode(ledPin2, OUTPUT);            // LED indikator keyboard
+  
+  // Inisialisasi serial untuk printer
   Serial.begin(9600);
+  
+  // Inisialisasi output pins
+  digitalWrite(atmegaPin1, LOW);
+  digitalWrite(atmegaPin2, LOW);
+  digitalWrite(ledPin1, LOW);
+  digitalWrite(ledPin2, LOW);
+  
+  // Kedipkan LED untuk indikasi sistem siap
+  for(int i=0; i<3; i++) {
+    digitalWrite(ledPin1, HIGH);
+    digitalWrite(ledPin2, HIGH);
+    delay(100);
+    digitalWrite(ledPin1, LOW);
+    digitalWrite(ledPin2, LOW);
+    delay(100);
+  }
+}
 
-  // Configure pin modes
-  pinMode(buttonPin, INPUT_PULLUP); // Enable internal pull-up resistor
-  pinMode(relayPin, OUTPUT);        // Relay as output
+void triggerSystem(bool isButton) {
+  // Kirim sinyal ke ATMega untuk gate
+  if (isButton) {
+    digitalWrite(atmegaPin1, HIGH);
+    digitalWrite(ledPin1, HIGH);
+  } else {
+    digitalWrite(atmegaPin2, HIGH);
+    digitalWrite(ledPin2, HIGH);
+  }
+  
+  // Kirim perintah cetak ke printer
+  Serial.println("PRINT");  // Trigger printer
+  
+  // Tunggu printer selesai
+  delay(signalDuration);
+  
+  // Matikan sinyal
+  if (isButton) {
+    digitalWrite(atmegaPin1, LOW);
+    digitalWrite(ledPin1, LOW);
+  } else {
+    digitalWrite(atmegaPin2, LOW);
+    digitalWrite(ledPin2, LOW);
+  }
+  
+  // Tunggu sebelum siap menerima input berikutnya
+  delay(1000);  // Delay 1 detik untuk mencegah double trigger
+}
 
-  // Ensure the relay is initially off
-  digitalWrite(relayPin, LOW);
+void processKeyboard() {
+  if (Serial.available() > 0) {
+    char command = Serial.read();
+    if (command == '1') {
+      triggerSystem(false);  // false = from keyboard
+    }
+  }
 }
 
 void loop() {
-  // Read the current state of the button
+  // Process keyboard commands
+  processKeyboard();
+  
+  // Read push button
   bool reading = digitalRead(buttonPin);
 
-  // Check if the button state has changed
+  // Check if button state changed
   if (reading != lastButtonState) {
-    // Reset the debounce timer
     lastDebounceTime = millis();
   }
 
-  // If the debounce time has passed, update the button state
+  // If debounce time passed
   if ((millis() - lastDebounceTime) > debounceDelay) {
-    // Only update the button state if it has changed
     if (reading != buttonState) {
       buttonState = reading;
 
-      // If the button was pressed (falling edge)
+      // If button pressed (LOW karena pull-up)
       if (buttonState == LOW) {
-        // Step 1: Turn on the relay
-        digitalWrite(relayPin, HIGH);
-
-        // Step 2: Send the current counter value to the computer
-        Serial.println(counter); // Send the counter value followed by a newline
-
-        // Step 3: Increment the counter and reset if it exceeds 1000
-        counter++;
-        if (counter > 1000) {
-          counter = 1; // Reset the counter to 1
-        }
-
-        // Step 4: Turn off the relay after a short delay
-        delay(500); // Keep the relay on for 500 ms
-        digitalWrite(relayPin, LOW);
+        triggerSystem(true);  // true = from button
       }
     }
   }
 
-  // Update the last button state
+  // Update button state
   lastButtonState = reading;
 }

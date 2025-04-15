@@ -1,0 +1,16 @@
+requests==2.31.0
+Django==5.0.1
+django-crispy-forms==2.1
+crispy-bootstrap4==2023.1
+python-dotenv==1.0.0
+pyserial==3.5
+# RPi.GPIO is commented out as it's not compatible with Windows
+# RPi.GPIO==0.7.1
+# Additional dependencies for Windows environment
+pywin32>=307
+Pillow>=10.1.0
+keyboard==0.13.5
+# Optional: For testing and development
+pytest>=7.4.0
+python-barcode>=0.14.0
+djangorestframework==3.14.0

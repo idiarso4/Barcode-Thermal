@@ -25,9 +25,23 @@ logger = logging.getLogger('parking_system')
 
 class ParkingCamera:
     def __init__(self):
-        # Load konfigurasi
-        self.config = self.load_config()
+        # Konfigurasi kamera
+        self.camera_ip = "192.168.2.20"
+        self.camera_user = "admin"
+        self.camera_pass = "@dminparkir"
+        self.rtsp_url = f"rtsp://{self.camera_user}:{self.camera_pass}@{self.camera_ip}/cam/realmonitor?channel=1&subtype=0"
         
+        # Konfigurasi capture
+        self.capture_dir = "capture"
+        self.image_quality = 60  # JPEG quality (1-100)
+        self.target_size = (800, 600)  # Ukuran gambar yang lebih kecil
+        
+        # Buat folder jika belum ada
+        if not os.path.exists(self.capture_dir):
+            os.makedirs(self.capture_dir)
+            logger.info(f"Folder capture dibuat: {self.capture_dir}")
+        
+        # Setup kamera
         # Inisialisasi folder dan file
         self.base_dir = os.path.dirname(os.path.abspath(__file__))
         self.capture_dir = os.path.join(self.base_dir, self.config['storage']['capture_dir'])
@@ -247,6 +261,10 @@ Last Connected: {self.connection_status['last_connected']}
     def setup_button(self):
         """Setup koneksi ke pushbutton melalui serial"""
         try:
+            # Import msvcrt di sini untuk handle keyboard
+            global msvcrt
+            import msvcrt
+            
             button_config = self.config['button']
             if button_config['type'] == 'serial':
                 # Coba koneksi langsung ke port yang dikonfigurasi
@@ -266,7 +284,7 @@ Last Connected: {self.connection_status['last_connected']}
                     self.button.reset_output_buffer()
                     
                     # Test koneksi dengan mengirim perintah
-                    self.button.write(b'test\n')
+                    self.button.write(b'TEST\n')
                     time.sleep(0.1)
                     response = self.button.readline().decode().strip()
                     
@@ -274,109 +292,108 @@ Last Connected: {self.connection_status['last_connected']}
                         logger.info(f"Koneksi serial ke pushbutton berhasil di port {button_config['port']}")
                         print(f"✅ Pushbutton terhubung di port {button_config['port']}")
                         print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
+                        print("ℹ️ Atau tekan tombol '1' pada keyboard untuk mengaktifkan gate")
                         self.button_mode = "serial"
+                        
+                        # Kirim inisialisasi ke Arduino
+                        self.button.write(b'INIT\n')
+                        logger.info("Sinyal inisialisasi dikirim ke Arduino")
                         return
                     else:
-                        print("⚠️ Tidak ada respons dari perangkat, menggunakan mode simulasi")
+                        print("⚠️ Tidak ada respons dari perangkat")
+                        print("ℹ️ Push button tidak terdeteksi, tapi Anda tetap bisa menggunakan tombol '1'")
                         self.button_mode = "simulation"
                         if hasattr(self, 'button'):
                             self.button.close()
                         return
                         
                 except serial.SerialException as e:
-                    if "PermissionError" in str(e):
-                        print(f"\n⚠️ Port {button_config['port']} sedang digunakan oleh aplikasi lain")
-                        print("Tutup aplikasi lain yang mungkin menggunakan port tersebut")
-                    elif "FileNotFoundError" in str(e):
-                        print(f"\n⚠️ Port {button_config['port']} tidak ditemukan")
-                        # Coba port COM lain
-                        for i in range(10):
-                            test_port = f"COM{i}"
-                            if test_port != button_config['port']:
-                                try:
-                                    print(f"Mencoba port {test_port}...")
-                                    self.button = serial.Serial(test_port, int(button_config['baudrate']), timeout=0.1)
-                                    time.sleep(2)
-                                    self.button.write(b'test\n')
-                                    time.sleep(0.1)
-                                    response = self.button.readline().decode().strip()
-                                    if response:
-                                        print(f"✅ Pushbutton ditemukan di port {test_port}")
-                                        print("ℹ️ Tekan tombol dengan mantap selama 0.5-1 detik")
-                                        self.button_mode = "serial"
-                                        return
-                                except:
-                                    continue
-                    else:
-                        print(f"\n⚠️ Gagal koneksi ke port {button_config['port']}: {str(e)}")
-                    
-                    # Jika semua port gagal, gunakan mode simulasi
-                    print("⚠️ Tidak dapat terhubung ke pushbutton, menggunakan mode simulasi keyboard")
+                    print(f"\n⚠️ Error koneksi push button: {str(e)}")
+                    print("ℹ️ Anda tetap bisa menggunakan tombol '1' pada keyboard")
                     self.button_mode = "simulation"
                     return
             else:
-                # Mode selain serial, gunakan simulasi
-                print("⚠️ Mode pushbutton tidak dikenali, menggunakan mode simulasi keyboard")
+                print("⚠️ Mode pushbutton tidak dikenali")
+                print("ℹ️ Anda tetap bisa menggunakan tombol '1' pada keyboard")
                 self.button_mode = "simulation"
                 return
                 
         except Exception as e:
             logger.error(f"Setup pushbutton warning: {str(e)}")
-            print("⚠️ Menggunakan mode simulasi keyboard untuk pushbutton")
+            print("⚠️ Terjadi error pada setup push button")
+            print("ℹ️ Anda tetap bisa menggunakan tombol '1' pada keyboard")
             self.button_mode = "simulation"
 
     def check_button(self):
-        """Cek status pushbutton dengan debounce dan toleransi"""
+        """Cek status pushbutton dan keyboard dengan debounce dan toleransi"""
         try:
-            if self.button_mode == "serial":
-                if self.button.in_waiting:
-                    # Baca semua data yang tersedia di buffer
-                    data = self.button.read_all().decode().strip()
-                    current_time = time.time()
-                    
-                    # Debug log
-                    if data:
-                        logger.debug(f"Data tombol diterima: {repr(data)}")
-                    
-                    # Cek apakah sudah melewati waktu debounce
+            current_time = time.time()
+            button_pressed = False
+            
+            # Cek keyboard input
+            if msvcrt.kbhit():
+                key = msvcrt.getch()
+                if key == b'1':  # Jika tombol '1' ditekan
+                    print("\n⌨️ Tombol '1' terdeteksi")
                     if current_time - self.last_button_press >= self.debounce_delay:
-                        # Reset buffer setelah membaca
-                        self.button.reset_input_buffer()
-                        
-                        # Cek berbagai kemungkinan input yang valid
-                        if any(x in data for x in ['1', 'true', 'True', 'HIGH']):
-                            self.last_button_press = current_time
-                            logger.info("Tombol terdeteksi dengan benar")
-                            return True
-                        else:
-                            # Jika ada data tapi tidak valid, coba proses juga
-                            if data:
-                                logger.info(f"Tombol terdeteksi dengan data tidak standar: {repr(data)}")
-                                self.last_button_press = current_time
-                                return True
+                        self.last_button_press = current_time
+                        button_pressed = True
+                        logger.info("Tombol keyboard '1' terdeteksi")
+                        # Kirim sinyal ke Arduino untuk mengangkat gate
+                        if self.button_mode == "serial" and hasattr(self, 'button'):
+                            try:
+                                self.button.write(b'OPEN\n')  # Kirim perintah ke Arduino
+                                print("🔄 Mengirim sinyal buka gate...")
+                                logger.info("Sinyal buka gate dikirim dari keyboard")
+                            except Exception as e:
+                                logger.error(f"Gagal mengirim sinyal ke Arduino: {str(e)}")
+            
+            # Cek pushbutton fisik
+            if self.button_mode == "serial" and self.button.in_waiting:
+                data = self.button.read_all().decode().strip()
+                
+                # Debug log
+                if data:
+                    logger.debug(f"Data tombol diterima: {repr(data)}")
+                
+                # Cek apakah sudah melewati waktu debounce
+                if current_time - self.last_button_press >= self.debounce_delay:
+                    # Reset buffer setelah membaca
+                    self.button.reset_input_buffer()
+                    
+                    # Cek berbagai kemungkinan input yang valid
+                    if any(x in data for x in ['1', 'true', 'True', 'HIGH']):
+                        print("\n🔘 Push button fisik terdeteksi")
+                        self.last_button_press = current_time
+                        button_pressed = True
+                        logger.info("Push button terdeteksi dengan benar")
+                        # Kirim konfirmasi ke Arduino
+                        try:
+                            self.button.write(b'ACK\n')  # Acknowledge signal received
+                            logger.info("Sinyal ACK dikirim ke Arduino")
+                        except Exception as e:
+                            logger.error(f"Gagal mengirim ACK: {str(e)}")
                     else:
-                        # Jika masih dalam masa debounce, bersihkan buffer
-                        self.button.reset_input_buffer()
-                        
-                        # Tampilkan sisa waktu jika ada aktivitas tombol
+                        # Jika ada data tapi tidak valid, coba proses juga
+                        if data:
+                            print("\n🔘 Push button terdeteksi (data tidak standar)")
+                            logger.info(f"Push button terdeteksi dengan data tidak standar: {repr(data)}")
+                            self.last_button_press = current_time
+                            button_pressed = True
+                else:
+                    # Jika masih dalam masa debounce, bersihkan buffer
+                    self.button.reset_input_buffer()
+                    
+                    # Tampilkan sisa waktu jika ada aktivitas tombol
+                    if data:
                         remaining = self.debounce_delay - (current_time - self.last_button_press)
-                        if data:  # Hanya tampilkan jika ada aktivitas tombol
-                            print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...\n")
-                            logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
-                            
-                return False
-            elif self.button_mode == "simulation":
-                # Mode simulasi - cek keyboard
-                import msvcrt
-                if msvcrt.kbhit():
-                    key = msvcrt.getch()
-                    # Jika user menekan spasi atau enter
-                    if key in [b' ', b'\r']:
-                        print("⚠️ Tombol keyboard terdeteksi sebagai pengganti pushbutton")
-                        return True
-                return False
+                        print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...")
+                        logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
+            
+            return button_pressed
+            
         except Exception as e:
-            logger.error(f"Error membaca pushbutton: {str(e)}")
+            logger.error(f"Error membaca input: {str(e)}")
             return False
 
     def setup_printer(self):
@@ -423,173 +440,105 @@ Last Connected: {self.connection_status['last_connected']}
 
     def print_ticket(self, filename):
         """Cetak tiket dengan barcode CODE39"""
+        printer_handle = None
         try:
             if not self.printer_available:
                 print("❌ Printer tidak tersedia")
                 return
                 
-            # Buka koneksi ke printer
+            # Buka printer
+            print("\nMembuka koneksi printer...")
             printer_handle = win32print.OpenPrinter(self.printer_name)
-            job_id = win32print.StartDocPrinter(printer_handle, 1, ("Tiket Parkir", None, "RAW"))
+            print("✅ Berhasil membuka koneksi printer")
+            
+            # Mulai dokumen baru
+            print("Memulai dokumen baru...")
+            job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
             win32print.StartPagePrinter(printer_handle)
-
-            # Format tiket dengan ESC/POS commands
+            
+            # Parse data tiket
             timestamp = datetime.now()
             ticket_number = filename.replace('.jpg','')
+            simple_number = ticket_number.split('_')[1] if '_' in ticket_number else ticket_number
             
-            # Jika tiket panjang, gunakan versi pendek untuk barcode
-            barcode_ticket = ticket_number
-            if len(ticket_number) > 15 and ticket_number.startswith("TKT"):
-                barcode_ticket = ticket_number[-10:]
+            # Siapkan data untuk dicetak - gunakan format yang lebih sederhana
+            print_data = bytearray()
             
-            # Kombinasikan semua perintah dalam satu bytearray
-            commands = bytearray()
+            # Reset dan inisialisasi printer
+            print_data += b"\x1B\x40"  # Initialize printer
             
-            # Initialize printer
-            commands.extend(b"\x1B\x40")  # ESC @ - Initialize printer
+            # Set mode printer
+            print_data += b"\x1B\x21\x00"  # Normal text mode
+            print_data += b"\x1B\x61\x01"  # Center alignment
             
-            # Center alignment
-            commands.extend(b"\x1B\x61\x01")  # ESC a 1 - Center alignment
+            # Header
+            print_data += b"\x1B\x21\x30"  # Double width & height
+            print_data += b"RSI BANJARNEGARA\n"
+            print_data += b"TIKET PARKIR\n"
+            print_data += b"\x1B\x21\x00"  # Normal text
+            print_data += b"================================\n"
             
-            # Header text
-            commands.extend(b"\x1B\x21\x30")  # Double width/height
-            commands.extend("RSI BANJARNEGARA\n".encode())
-            commands.extend(b"\x1B\x21\x00")  # Normal font
-            commands.extend("TIKET PARKIR\n".encode())
-            commands.extend("--------------------------------\n".encode())
+            # Informasi tiket (left align)
+            print_data += b"\x1B\x61\x00"  # Left alignment
+            print_data += f"Nomor : {ticket_number}\n".encode()
+            print_data += f"Waktu : {timestamp.strftime('%Y-%m-%d %H:%M:%S')}\n".encode()
+            print_data += b"================================\n"
             
-            # Left alignment untuk detail tiket
-            commands.extend(b"\x1B\x61\x00")  # ESC a 0 - Left alignment
-            
-            # Details
-            commands.extend(f"Tanggal : {timestamp.strftime('%d-%m-%Y')}\n".encode())
-            commands.extend(f"Jam     : {timestamp.strftime('%H:%M:%S')}\n".encode())
-            commands.extend(f"No.     : {ticket_number}\n".encode())
-            commands.extend("--------------------------------\n\n".encode())
-            
-            # Center untuk barcode
-            commands.extend(b"\x1B\x61\x01")  # Center alignment
-            
-            # Barcode info
-            commands.extend(b"\x1D\x68\x50")  # GS h 80 - Barcode height 80 dots
-            commands.extend(b"\x1D\x77\x02")  # GS w 2 - Barcode width multiplier (2)
-            commands.extend(b"\x1D\x48\x02")  # GS H 2 - HRI below barcode
-            
-            # Print barcode type CODE39
-            commands.extend(b"\x1D\x6B\x04")  # GS k 4 - CODE39 barcode
-            commands.append(len(barcode_ticket))  # Length byte
-            commands.extend(barcode_ticket.encode('ascii'))  # Barcode data
+            # Barcode (center)
+            print_data += b"\x1B\x61\x01"  # Center alignment
+            print_data += b"\x1D\x68\x50"  # Barcode height
+            print_data += b"\x1D\x77\x02"  # Barcode width
+            print_data += b"\x1D\x48\x02"  # HRI below barcode
+            print_data += b"\x1D\x6B\x04"  # CODE39
+            print_data += bytes([len(simple_number)])
+            print_data += simple_number.encode()
             
             # Footer
-            commands.extend(b"\n\n")
-            commands.extend(b"\x1B\x61\x01")  # Center alignment
-            commands.extend("Terima Kasih\n".encode())
-            commands.extend("Simpan Tiket Anda\n\n\n".encode())
+            print_data += b"\n\n"
+            print_data += b"Terima kasih\n"
+            print_data += b"Jangan hilangkan tiket ini\n\n"
             
-            # Cut paper
-            commands.extend(b"\x1D\x56\x42")  # GS V B - Cut paper
+            # Kirim data ke printer
+            print("Mengirim data ke printer...")
             
-            # Kirim semua data ke printer
-            win32print.WritePrinter(printer_handle, commands)
-
-            # Selesaikan job printing
+            # Kirim dalam satu operasi
+            result = win32print.WritePrinter(printer_handle, print_data)
+            print(f"Data terkirim: {result} bytes")
+            
+            # Tunggu sebentar
+            time.sleep(0.5)
+            
+            # Feed dan cut
+            print("Memotong tiket...")
+            cut_command = bytearray()
+            cut_command += b"\x1B\x64\x03"  # Feed 3 lines
+            cut_command += b"\x1D\x56\x41"  # Full cut
+            win32print.WritePrinter(printer_handle, cut_command)
+            
+            # Tunggu proses selesai
+            time.sleep(1)
+            
+            # Tutup printer dengan benar
+            print("Menutup koneksi printer...")
             win32print.EndPagePrinter(printer_handle)
             win32print.EndDocPrinter(printer_handle)
             win32print.ClosePrinter(printer_handle)
+            printer_handle = None
             
-            print(f"\nMencetak tiket:")
-            print(f"Nomor: {ticket_number}")
-            print(f"Waktu: {timestamp}")
+            print("✅ Tiket berhasil dicetak")
             
-            # Buka printer
-            try:
-                print("Membuka koneksi printer...")
-                printer_handle = win32print.OpenPrinter(self.printer_name)
-                print("✅ Berhasil membuka koneksi printer")
-            except Exception as e:
-                print(f"❌ Gagal membuka printer: {str(e)}")
-                logger.error(f"OpenPrinter error: {str(e)}")
-                return
-                
-            try:
-                # Start document
-                print("Memulai dokumen...")
-                job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
-                print(f"Job ID: {job_id}")
-                
-                print("Memulai halaman...")
-                win32print.StartPagePrinter(printer_handle)
-                
-                # Coba dengan format ESC/POS yang lebih sederhana
-                print("Initializing printer...")
-                win32print.WritePrinter(printer_handle, b"\x1B\x40")  # Initialize printer
-                
-                # Simpan semua data cetak dalam satu variabel
-                print_data = b""
-                print_data += b"\x1B\x61\x01"  # Center alignment
-                
-                # Header - double height & width
-                print_data += b"\x1B\x21\x30"  # Double width & height
-                print_data += b"RSI BANJARNEGARA\n"
-                print_data += b"TIKET PARKIR\n"
-                print_data += b"\x1B\x21\x00"  # Normal text
-                print_data += b"================================\n"
-                
-                # Ticket details - left align, normal text
-                print_data += b"\x1B\x61\x00"  # Left alignment
-                print_data += f"Nomor : {ticket_number}\n".encode()
-                print_data += f"Waktu : {timestamp}\n".encode()
-                print_data += b"================================\n"
-                
-                # Jangan gunakan barcode untuk sementara, hanya text saja
-                print_data += b"\x1B\x61\x01"  # Center alignment
-                print_data += b"\x1B\x21\x30"  # Double width & height
-                simple_number = ticket_number.split('_')[1] if '_' in ticket_number else ticket_number
-                print_data += f"{simple_number}\n".encode()
-                print_data += b"\x1B\x21\x00"  # Normal text
-                
-                # Footer - center align
-                print_data += b"\n\n"
-                print_data += b"Terima kasih\n"
-                print_data += b"Jangan hilangkan tiket ini\n"
-                
-                # Feed and cut
-                print_data += b"\x1B\x64\x05"  # Feed 5 lines
-                # Don't use cut command for troubleshooting
-                # print_data += b"\x1D\x56\x41\x00"  # Cut paper
-                
-                # Tulis data ke printer
-                print(f"Mengirim {len(print_data)} bytes data ke printer...")
-                result = win32print.WritePrinter(printer_handle, print_data)
-                print(f"Hasil pengiriman: {result} bytes")
-                
-                # Close printer
-                print("Finalisasi halaman dan dokumen...")
-                win32print.EndPagePrinter(printer_handle)
-                win32print.EndDocPrinter(printer_handle)
-                win32print.ClosePrinter(printer_handle)
-                
-                print("✅ Tiket berhasil dicetak")
-                
-            except Exception as e:
-                logger.error(f"Printer error details: {str(e)}")
-                print(f"❌ Gagal mengirim data ke printer: {str(e)}")
+        except Exception as e:
+            logger.error(f"Error printing ticket: {str(e)}")
+            print(f"❌ Error saat mencetak tiket: {str(e)}")
+            
+            # Cleanup jika terjadi error
+            if printer_handle:
                 try:
                     win32print.EndPagePrinter(printer_handle)
                     win32print.EndDocPrinter(printer_handle)
                     win32print.ClosePrinter(printer_handle)
                 except:
                     pass
-                print("\nTroubleshooting cetak tiket:")
-                print("1. Pastikan printer menyala dan online")
-                print("2. Cek persediaan kertas")
-                print("3. Coba restart printer")
-                print("4. Cek status driver printer")
-                raise
-            
-        except Exception as e:
-            logger.error(f"Error printing ticket: {str(e)}")
-            print(f"❌ Error saat mencetak tiket: {str(e)}")
 
     def setup_database(self):
         """Setup koneksi ke database PostgreSQL"""
