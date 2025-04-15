@@ -45,7 +45,7 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 0.5
+        self.debounce_delay = 3.0  # Ubah dari 30 detik menjadi 3 detik
         self.button_mode = "keyboard"  # Default to keyboard mode
         
         # Add additional timing parameters
