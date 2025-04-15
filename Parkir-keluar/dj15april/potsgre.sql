@@ -1,0 +1,5 @@
+CREATE TABLE vehicle (
+    id SERIAL PRIMARY KEY,
+    vehicle_entry VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

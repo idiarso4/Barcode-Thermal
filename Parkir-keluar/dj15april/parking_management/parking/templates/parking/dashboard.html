@@ -1,0 +1,76 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<h1 class="mb-4">Dashboard</h1>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card text-white bg-primary mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Total Spots</h5>
+                <p class="card-text display-4">{{ total_spots }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-success mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Available Spots</h5>
+                <p class="card-text display-4">{{ available_spots }}</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card text-white bg-info mb-3">
+            <div class="card-body">
+                <h5 class="card-title">Active Sessions</h5>
+                <p class="card-text display-4">{{ active_sessions }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5 class="card-title mb-0">Recent Parking Sessions</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Vehicle</th>
+                        <th>Spot</th>
+                        <th>Check In</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for session in recent_sessions %}
+                    <tr>
+                        <td>{{ session.vehicle.license_plate }}</td>
+                        <td>{{ session.parking_spot.spot_number }}</td>
+                        <td>{{ session.check_in_time }}</td>
+                        <td>
+                            {% if session.is_active %}
+                            <span class="badge bg-success">Active</span>
+                            {% else %}
+                            <span class="badge bg-secondary">Completed</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if session.is_active %}
+                            <a href="{% url 'parking:check_out' session.id %}" class="btn btn-warning btn-sm">Check Out</a>
+                            {% else %}
+                            <span class="text-muted">Checked out</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %} 

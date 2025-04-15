@@ -13,6 +13,7 @@ import serial
 import win32print
 import psycopg2
 from psycopg2 import Error
+import random
 
 # Setup logging
 logging.basicConfig(
@@ -43,11 +44,11 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 3.0  # Increased to 3 seconds for more stability
+        self.debounce_delay = 0.5  # Turunkan dari 1.0 ke 0.5 detik untuk lebih responsif
         
         # Add additional timing parameters
-        self.camera_initialization_delay = 5.0  # Wait 5 seconds after camera initialization
-        self.button_check_interval = 0.5  # Check button every 0.5 seconds
+        self.camera_initialization_delay = 2.0  # Turunkan dari 5.0 ke 2.0 detik
+        self.button_check_interval = 0.05  # Turunkan dari 0.1 ke 0.05 untuk lebih responsif
         
         # Buat folder jika belum ada
         if not os.path.exists(self.capture_dir):
@@ -77,79 +78,14 @@ class ParkingCamera:
         logger.info("Sistem parkir berhasil diinisialisasi")
 
     def setup_camera(self):
-        """Setup koneksi ke kamera Dahua menggunakan RTSP"""
+        """Setup kamera - bisa mode dummy atau real camera"""
         try:
-            # Nonaktifkan kamera dan gunakan dummy camera sementara
             print("\nMelewati inisialisasi kamera (mode dummy)...")
-            print("✅ Mode dummy kamera aktif - tidak melakukan capture gambar sungguhan")
-            logger.info("Kamera dilewati - menggunakan dummy mode")
-            
-            # Setup dummy camera untuk testing
             self.camera = None
-            self.connection_status.update({
-                'is_connected': True,
-                'last_connected': datetime.now(),
-                'reconnect_attempts': 0,
-                'current_url': 'dummy://camera'
-            })
-            
+            print("✅ Mode dummy kamera aktif - tidak melakukan capture gambar sungguhan")
             return
-            
-            # Kode koneksi kamera asli (dinonaktifkan sementara)
-            """
-            camera_config = self.config['camera']
-            
-            # Format RTSP URL untuk Dahua
-            rtsp_urls = [
-                f"rtsp://{camera_config['username']}:{quote(camera_config['password'])}@{camera_config['ip']}:{camera_config['port']}/cam/realmonitor?channel=1&subtype=0",
-                f"rtsp://{camera_config['username']}:{quote(camera_config['password'])}@{camera_config['ip']}:{camera_config['port']}/cam/realmonitor?channel=1&subtype=1",
-                f"rtsp://{camera_config['username']}:{quote(camera_config['password'])}@{camera_config['ip']}:{camera_config['port']}/cam/realmonitor?channel=1",
-                f"rtsp://{camera_config['username']}:{quote(camera_config['password'])}@{camera_config['ip']}:{camera_config['port']}/h264/ch1/main/av_stream"
-            ]
-            
-            print("\nMencoba koneksi ke kamera Dahua menggunakan RTSP...")
-            
-            for url in rtsp_urls:
-                try:
-                    print(f"Mencoba URL: {url}")
-                    self.camera = cv2.VideoCapture(url)
-                    
-                    if self.camera.isOpened():
-                        # Coba ambil frame untuk memastikan koneksi benar-benar berhasil
-                        ret, frame = self.camera.read()
-                        if ret and frame is not None:
-                            self.connection_status.update({
-                                'is_connected': True,
-                                'last_connected': datetime.now(),
-                                'reconnect_attempts': 0,
-                                'current_url': url
-                            })
-                            
-                            # Set resolusi kamera
-                            self.camera.set(cv2.CAP_PROP_FRAME_WIDTH, int(self.config['image']['width']))
-                            self.camera.set(cv2.CAP_PROP_FRAME_HEIGHT, int(self.config['image']['height']))
-                            
-                            logger.info(f"Koneksi ke kamera Dahua berhasil dengan URL: {url}")
-                            print("✅ Kamera Dahua terdeteksi dan terhubung")
-                            return
-                        else:
-                            print("❌ Koneksi terbuka tapi tidak bisa membaca frame")
-                            self.camera.release()
-                    else:
-                        print("❌ Gagal membuka koneksi")
-                        
-                except Exception as e:
-                    print(f"❌ Error mencoba URL {url}: {str(e)}")
-                    if hasattr(self, 'camera'):
-                        self.camera.release()
-                    continue
-            
-            raise Exception("Tidak dapat terhubung ke kamera dengan semua URL yang dicoba")
-            """
-                
         except Exception as e:
-            self.connection_status['is_connected'] = False
-            logger.error(f"Gagal setup kamera: {str(e)}")
+            logger.error(f"Error setting up camera: {str(e)}")
             raise Exception(f"Gagal setup kamera: {str(e)}")
 
     def images_are_different(self, img1, img2):
@@ -178,57 +114,36 @@ class ParkingCamera:
             return True  # Jika error, anggap berbeda untuk safety
 
     def capture_image(self):
-        """Ambil gambar dari kamera (dummy mode)"""
+        """Capture gambar - mode dummy akan menghasilkan file kosong"""
         try:
-            # Buat dummy image karena kamera dinonaktifkan
+            # Generate nama file berdasarkan timestamp
+            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+            counter = str(random.randint(1000, 9999))
+            filename = f"TKT{timestamp}_{counter}.jpg"
+            filepath = os.path.join(self.capture_dir, filename)
+            
+            # Dalam mode dummy, buat file kosong
+            with open(filepath, 'w') as f:
+                pass
+                
+            # Buat file JSON dengan metadata
+            json_data = {
+                "timestamp": timestamp,
+                "counter": counter,
+                "mode": "dummy"
+            }
+            
+            with open(filepath + ".json", 'w') as f:
+                json.dump(json_data, f, indent=4)
+                
             print("✅ Menggunakan gambar dummy (tanpa kamera)")
-            
-            # Generate nama file dengan waktu Windows yang akurat
-            current_time = datetime.now()
-            counter = self.get_counter()
-            filename = f"TKT{current_time.strftime('%Y%m%d%H%M%S')}_{counter:04d}.jpg"
-            
-            # Buat file dummy kosong
-            filepath = os.path.join(self.config['storage']['capture_dir'], filename)
-            
-            # Cek apakah OpenCV tersedia
-            try:
-                # Jika OpenCV tersedia, buat dummy image sederhana
-                height = 480
-                width = 640
-                dummy_image = np.zeros((height, width, 3), dtype=np.uint8)
-                
-                # Tambahkan background putih
-                dummy_image.fill(255)
-                
-                # Tambahkan timestamp ke gambar
-                timestamp_str = current_time.strftime("%Y-%m-%d %H:%M:%S")
-                cv2.putText(dummy_image, "DUMMY IMAGE - NO CAMERA", (50, 50),
-                           cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 0), 2)
-                cv2.putText(dummy_image, f"Ticket: {filename}", (50, 100),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
-                cv2.putText(dummy_image, timestamp_str, (50, 150),
-                           cv2.FONT_HERSHEY_SIMPLEX, 0.7, (0, 0, 0), 2)
-                
-                # Simpan dummy image
-                cv2.imwrite(filepath, dummy_image)
-                
-                # Update last image untuk konsistensi
-                self.last_image = dummy_image.copy()
-                
-            except Exception as e:
-                # Jika OpenCV tidak dapat digunakan, buat file kosong saja
-                logger.warning(f"Tidak dapat membuat dummy image, menggunakan file kosong: {str(e)}")
-                with open(filepath, 'w') as f:
-                    f.write("Dummy image file")
-            
             print(f"✅ File dummy disimpan: {filename}")
-            logger.info(f"File dummy dibuat dengan timestamp: {current_time}")
+            
+            self.last_capture_time = time.time()
             return True, filename
-
+            
         except Exception as e:
-            logger.error(f"Error creating dummy image: {str(e)}")
-            print(f"❌ Error saat membuat file dummy: {str(e)}")
+            logger.error(f"Error capturing image: {str(e)}")
             return False, None
 
     def load_config(self):
@@ -409,6 +324,9 @@ Last Connected: {self.connection_status['last_connected']}
                 
                 # Cek apakah sudah melewati waktu debounce
                 if current_time - self.last_button_press >= self.debounce_delay:
+                    # Reset buffer setelah membaca
+                    self.button.reset_input_buffer()
+                    
                     # Cek berbagai kemungkinan input yang valid
                     if any(x in data for x in ['1', 'true', 'True', 'HIGH']):
                         self.last_button_press = current_time
@@ -421,13 +339,17 @@ Last Connected: {self.connection_status['last_connected']}
                             self.last_button_press = current_time
                             return True
                 else:
-                    # Jika masih dalam masa debounce, tampilkan sisa waktu
+                    # Jika masih dalam masa debounce, bersihkan buffer
+                    self.button.reset_input_buffer()
+                    
+                    # Tampilkan sisa waktu jika ada aktivitas tombol
                     remaining = self.debounce_delay - (current_time - self.last_button_press)
                     if data:  # Hanya tampilkan jika ada aktivitas tombol
                         print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...\n")
                         logger.debug(f"Tombol dalam debounce, sisa waktu: {remaining:.1f}s")
                         
             return False
+            
         except Exception as e:
             logger.error(f"Error membaca pushbutton: {str(e)}")
             return False
@@ -491,63 +413,68 @@ Last Connected: {self.connection_status['last_connected']}
             
             # Buka printer
             try:
+                print("Membuka koneksi printer...")
                 printer_handle = win32print.OpenPrinter(self.printer_name)
                 print("✅ Berhasil membuka koneksi printer")
             except Exception as e:
                 print(f"❌ Gagal membuka printer: {str(e)}")
+                logger.error(f"OpenPrinter error: {str(e)}")
                 return
                 
             try:
                 # Start document
+                print("Memulai dokumen...")
                 job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
+                print(f"Job ID: {job_id}")
+                
+                print("Memulai halaman...")
                 win32print.StartPagePrinter(printer_handle)
                 
-                # Initialize printer
+                # Coba dengan format ESC/POS yang lebih sederhana
+                print("Initializing printer...")
                 win32print.WritePrinter(printer_handle, b"\x1B\x40")  # Initialize printer
-                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
+                
+                # Simpan semua data cetak dalam satu variabel
+                print_data = b""
+                print_data += b"\x1B\x61\x01"  # Center alignment
                 
                 # Header - double height & width
-                win32print.WritePrinter(printer_handle, b"\x1B\x21\x30")  # Double width & height
-                win32print.WritePrinter(printer_handle, b"RSI BANJARNEGARA\n")
-                win32print.WritePrinter(printer_handle, b"TIKET PARKIR\n")
-                win32print.WritePrinter(printer_handle, b"\x1B\x21\x00")  # Normal text
-                win32print.WritePrinter(printer_handle, b"================================\n")
+                print_data += b"\x1B\x21\x30"  # Double width & height
+                print_data += b"RSI BANJARNEGARA\n"
+                print_data += b"TIKET PARKIR\n"
+                print_data += b"\x1B\x21\x00"  # Normal text
+                print_data += b"================================\n"
                 
                 # Ticket details - left align, normal text
-                win32print.WritePrinter(printer_handle, b"\x1B\x61\x00")  # Left alignment
-                win32print.WritePrinter(printer_handle, f"Nomor : {ticket_number}\n".encode())
-                win32print.WritePrinter(printer_handle, f"Waktu : {timestamp}\n".encode())
-                win32print.WritePrinter(printer_handle, b"================================\n")
+                print_data += b"\x1B\x61\x00"  # Left alignment
+                print_data += f"Nomor : {ticket_number}\n".encode()
+                print_data += f"Waktu : {timestamp}\n".encode()
+                print_data += b"================================\n"
                 
-                # Barcode section - optimized for thermal printer
-                win32print.WritePrinter(printer_handle, b"\x1D\x48\x02")  # HRI below barcode
-                win32print.WritePrinter(printer_handle, b"\x1D\x68\x50")  # Barcode height = 80 dots
-                win32print.WritePrinter(printer_handle, b"\x1D\x77\x02")  # Barcode width = 2
-                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
-                
-                # Use CODE39 with clear format
-                win32print.WritePrinter(printer_handle, b"\x1D\x6B\x04")  # Select CODE39
-                
-                # Simplify ticket number for better scanning
-                simple_number = ticket_number.split('_')[1]  # Ambil hanya nomor urut
-                barcode_data = f"*{simple_number}*".encode()  # Format CODE39
-                win32print.WritePrinter(printer_handle, barcode_data)
-                
-                # Extra space after barcode
-                win32print.WritePrinter(printer_handle, b"\n\n")
+                # Jangan gunakan barcode untuk sementara, hanya text saja
+                print_data += b"\x1B\x61\x01"  # Center alignment
+                print_data += b"\x1B\x21\x30"  # Double width & height
+                simple_number = ticket_number.split('_')[1] if '_' in ticket_number else ticket_number
+                print_data += f"{simple_number}\n".encode()
+                print_data += b"\x1B\x21\x00"  # Normal text
                 
                 # Footer - center align
-                win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
-                win32print.WritePrinter(printer_handle, b"Terima kasih\n")
-                win32print.WritePrinter(printer_handle, b"Jangan hilangkan tiket ini\n")
+                print_data += b"\n\n"
+                print_data += b"Terima kasih\n"
+                print_data += b"Jangan hilangkan tiket ini\n"
                 
                 # Feed and cut
-                win32print.WritePrinter(printer_handle, b"\x1B\x64\x05")  # Feed 5 lines
-                win32print.WritePrinter(printer_handle, b"\x1D\x56\x41\x00")  # Cut paper
+                print_data += b"\x1B\x64\x05"  # Feed 5 lines
+                # Don't use cut command for troubleshooting
+                # print_data += b"\x1D\x56\x41\x00"  # Cut paper
                 
-                print("✅ Berhasil mengirim data ke printer")
+                # Tulis data ke printer
+                print(f"Mengirim {len(print_data)} bytes data ke printer...")
+                result = win32print.WritePrinter(printer_handle, print_data)
+                print(f"Hasil pengiriman: {result} bytes")
                 
                 # Close printer
+                print("Finalisasi halaman dan dokumen...")
                 win32print.EndPagePrinter(printer_handle)
                 win32print.EndDocPrinter(printer_handle)
                 win32print.ClosePrinter(printer_handle)
@@ -555,7 +482,19 @@ Last Connected: {self.connection_status['last_connected']}
                 print("✅ Tiket berhasil dicetak")
                 
             except Exception as e:
+                logger.error(f"Printer error details: {str(e)}")
                 print(f"❌ Gagal mengirim data ke printer: {str(e)}")
+                try:
+                    win32print.EndPagePrinter(printer_handle)
+                    win32print.EndDocPrinter(printer_handle)
+                    win32print.ClosePrinter(printer_handle)
+                except:
+                    pass
+                print("\nTroubleshooting cetak tiket:")
+                print("1. Pastikan printer menyala dan online")
+                print("2. Cek persediaan kertas")
+                print("3. Coba restart printer")
+                print("4. Cek status driver printer")
                 raise
             
         except Exception as e:
@@ -564,7 +503,14 @@ Last Connected: {self.connection_status['last_connected']}
 
     def setup_database(self):
         """Setup koneksi ke database PostgreSQL"""
+        self.db_conn = None
         try:
+            # Periksa apakah bagian database ada di config
+            if 'database' not in self.config:
+                logger.warning("Bagian database tidak ditemukan di config.ini - mode tanpa database aktif")
+                print("ℹ️ Mode tanpa database aktif")
+                return
+
             db_config = self.config['database']
             self.db_conn = psycopg2.connect(
                 dbname=db_config['dbname'],
@@ -575,11 +521,17 @@ Last Connected: {self.connection_status['last_connected']}
             logger.info("Koneksi ke database berhasil")
             print("✅ Database terkoneksi")
         except Exception as e:
-            logger.error(f"Gagal koneksi ke database: {str(e)}")
-            raise Exception(f"Gagal koneksi ke database: {str(e)}")
+            logger.warning(f"Gagal koneksi ke database: {str(e)}")
+            print(f"ℹ️ Mode tanpa database aktif - {str(e)}")
+            self.db_conn = None
 
     def save_to_database(self, ticket_number, image_path):
         """Simpan data tiket ke database"""
+        if self.db_conn is None:
+            logger.info("Database tidak tersedia, menyimpan data secara lokal saja")
+            print("ℹ️ Database tidak digunakan - data disimpan lokal")
+            return
+
         try:
             cur = self.db_conn.cursor()
             
@@ -599,16 +551,21 @@ Last Connected: {self.connection_status['last_connected']}
             
         except Exception as e:
             logger.error(f"Gagal menyimpan ke database: {str(e)}")
-            print(f"❌ Gagal menyimpan ke database: {str(e)}")
-            self.db_conn.rollback()
+            print(f"⚠️ Gagal menyimpan ke database: {str(e)}")
+            if self.db_conn:
+                try:
+                    self.db_conn.rollback()
+                except:
+                    pass
         finally:
-            cur.close()
+            if 'cur' in locals() and cur:
+                cur.close()
 
     def process_button_press(self):
         """Proses ketika tombol ditekan - ambil gambar, cetak tiket, dan simpan ke database"""
         try:
             # Tambah delay kecil untuk stabilisasi
-            time.sleep(0.2)  # Kurangi dari 0.5 detik menjadi 0.2 detik untuk stabilisasi kamera
+            time.sleep(0.1)  # Kurangi dari 0.2 detik menjadi 0.1 detik untuk stabilisasi kamera
             
             print("\n\nMemproses... Mohon tunggu...\n")
             print("1. Mengambil gambar...")
@@ -618,7 +575,7 @@ Last Connected: {self.connection_status['last_connected']}
             current_time = time.time()
             if hasattr(self, 'last_capture_time') and self.last_capture_time:
                 time_since_last = current_time - self.last_capture_time
-                if time_since_last < 1:  # Kurangi dari 2 menjadi 1 detik antara capture
+                if time_since_last < 0.5:  # Kurangi dari 1 menjadi 0.5 detik antara capture
                     print("⚠️ Terlalu cepat! Mohon tunggu...\n")
                     logger.warning(f"Capture terlalu cepat, interval: {time_since_last:.1f}s")
                     return
@@ -651,7 +608,7 @@ Last Connected: {self.connection_status['last_connected']}
                     print("\n❌ Printer tidak tersedia, tiket tidak bisa dicetak")
                 
                 # Tambah delay setelah proses selesai
-                time.sleep(0.2)  # Kurangi dari 0.5 detik menjadi 0.2 detik setelah proses
+                time.sleep(0.1)  # Kurangi dari 0.2 detik menjadi 0.1 detik setelah proses
                 print("\n\nStatus: Menunggu input berikutnya...\n")
                 logger.info("Proses capture selesai dengan sukses")
             else:
@@ -669,7 +626,7 @@ Last Connected: {self.connection_status['last_connected']}
                 self.camera.release()
             if hasattr(self, 'button'):
                 self.button.close()
-            if hasattr(self, 'db_conn'):
+            if hasattr(self, 'db_conn') and self.db_conn is not None:
                 self.db_conn.close()
             logger.info("Cleanup berhasil")
         except Exception as e:
@@ -692,7 +649,7 @@ Status: Menunggu input dari pushbutton...
                     self.process_button_press()
                 
                 # Delay kecil untuk mengurangi CPU usage
-                time.sleep(0.05)
+                time.sleep(self.button_check_interval)
                 
         except KeyboardInterrupt:
             print("\nProgram dihentikan...")

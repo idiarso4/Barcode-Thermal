@@ -1,0 +1,169 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Shift History</h4>
+            {% if not active_shift %}
+            <a href="{% url 'parking:start_shift' %}" class="btn btn-light">Start New Shift</a>
+            {% endif %}
+        </div>
+        <div class="card-body">
+            <!-- Filter Form -->
+            <form method="get" class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <label class="form-label">Date Range</label>
+                    <input type="text" name="date_range" class="form-control" id="date-range-picker" 
+                           value="{{ request.GET.date_range }}">
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Status</label>
+                    <select name="status" class="form-select">
+                        <option value="">All</option>
+                        <option value="active" {% if request.GET.status == 'active' %}selected{% endif %}>Active</option>
+                        <option value="completed" {% if request.GET.status == 'completed' %}selected{% endif %}>Completed</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Sort By</label>
+                    <select name="sort" class="form-select">
+                        <option value="start_time" {% if request.GET.sort == 'start_time' %}selected{% endif %}>Start Time</option>
+                        <option value="-start_time" {% if request.GET.sort == '-start_time' %}selected{% endif %}>Start Time (Desc)</option>
+                        <option value="total_vehicles" {% if request.GET.sort == 'total_vehicles' %}selected{% endif %}>Total Vehicles</option>
+                        <option value="total_revenue" {% if request.GET.sort == 'total_revenue' %}selected{% endif %}>Total Revenue</option>
+                    </select>
+                </div>
+                <div class="col-md-2 d-flex align-items-end">
+                    <button type="submit" class="btn btn-primary me-2">Apply</button>
+                    <a href="{% url 'parking:shift_list' %}" class="btn btn-secondary">Reset</a>
+                </div>
+            </form>
+
+            <div class="table-responsive">
+                <table class="table table-striped" id="shifts-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Start Time</th>
+                            <th>End Time</th>
+                            <th>Duration</th>
+                            <th>Vehicles</th>
+                            <th>Revenue</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for shift in shifts %}
+                        <tr>
+                            <td>{{ shift.start_time|date:"Y-m-d" }}</td>
+                            <td>{{ shift.start_time|time:"H:i" }}</td>
+                            <td>
+                                {% if shift.end_time %}
+                                    {{ shift.end_time|time:"H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if shift.end_time %}
+                                    {{ shift.start_time|timesince:shift.end_time }}
+                                {% else %}
+                                    {{ shift.start_time|timesince }} (ongoing)
+                                {% endif %}
+                            </td>
+                            <td>{{ shift.total_vehicles }}</td>
+                            <td>Rp {{ shift.total_revenue }}</td>
+                            <td>
+                                {% if shift.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="btn-group">
+                                    <a href="{% url 'parking:shift_report' shift.id %}" class="btn btn-sm btn-info">
+                                        View Report
+                                    </a>
+                                    {% if shift.is_active %}
+                                    <a href="{% url 'parking:end_shift' %}" class="btn btn-sm btn-warning">
+                                        End Shift
+                                    </a>
+                                    {% endif %}
+                                    <a href="{% url 'parking:export_shift_report' shift.id %}" class="btn btn-sm btn-success">
+                                        <i class="fas fa-file-excel"></i> Export
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center">No shifts recorded yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if shifts.has_other_pages %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if shifts.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ shifts.previous_page_number }}{% if request.GET.date_range %}&date_range={{ request.GET.date_range }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">&laquo;</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in shifts.paginator.page_range %}
+                    <li class="page-item {% if shifts.number == num %}active{% endif %}">
+                        <a class="page-link" href="?page={{ num }}{% if request.GET.date_range %}&date_range={{ request.GET.date_range }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">{{ num }}</a>
+                    </li>
+                    {% endfor %}
+                    
+                    {% if shifts.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ shifts.next_page_number }}{% if request.GET.date_range %}&date_range={{ request.GET.date_range }}{% endif %}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.sort %}&sort={{ request.GET.sort }}{% endif %}">&raquo;</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'parking:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/momentjs/latest/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+<script>
+$(document).ready(function() {
+    $('#date-range-picker').daterangepicker({
+        autoUpdateInput: false,
+        locale: {
+            cancelLabel: 'Clear'
+        }
+    });
+
+    $('#date-range-picker').on('apply.daterangepicker', function(ev, picker) {
+        $(this).val(picker.startDate.format('YYYY-MM-DD') + ' - ' + picker.endDate.format('YYYY-MM-DD'));
+    });
+
+    $('#date-range-picker').on('cancel.daterangepicker', function(ev, picker) {
+        $(this).val('');
+    });
+});
+</script>
+{% endblock %} 

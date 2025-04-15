@@ -1,0 +1,6 @@
+@echo off
+echo Closing push button connection...
+taskkill /F /IM python.exe
+echo Waiting for ports to clear...
+timeout /t 2 /nobreak
+echo Done! 

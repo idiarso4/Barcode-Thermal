@@ -1,0 +1,25 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">Start Your Shift</h4>
+                </div>
+                <div class="card-body">
+                    <p class="text-center mb-4">Welcome, {{ request.user.username }}! You need to start your shift before you can manage parking.</p>
+                    
+                    <form method="post" action="{% url 'parking:start_shift' %}">
+                        {% csrf_token %}
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">Start Shift</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

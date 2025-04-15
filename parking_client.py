@@ -8,9 +8,10 @@ import serial.tools.list_ports
 import time
 import win32print
 import win32ui
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageWin
 import barcode
 from barcode.writer import ImageWriter
+import configparser
 
 # Setup logging
 logging.basicConfig(
@@ -58,32 +59,44 @@ class ParkingClient:
                     break
             
             if not self.printer_name:
-                logger.error("Printer EPSON tidak ditemukan")
-                print("❌ Printer EPSON tidak ditemukan")
+                logger.warning("Printer EPSON tidak ditemukan")
+                print("⚠️ Printer EPSON tidak ditemukan")
                 # Mencoba menggunakan printer default
                 self.printer_name = win32print.GetDefaultPrinter()
                 if self.printer_name:
+                    logger.info(f"Menggunakan printer default: {self.printer_name}")
                     print(f"ℹ️ Menggunakan printer default: {self.printer_name}")
                 
         except Exception as e:
             logger.error(f"Gagal menginisialisasi printer: {str(e)}")
-            print("❌ Gagal menginisialisasi printer")
+            print(f"❌ Gagal menginisialisasi printer: {str(e)}")
             self.printer_name = None
 
         # Inisialisasi koneksi Arduino
         try:
-            arduino_port = self.find_arduino_port()
+            # Read COM port from config instead of auto-detection
+            config = configparser.ConfigParser()
+            config.read('config.ini')
+            if 'button' in config and 'port' in config['button']:
+                arduino_port = config['button']['port']
+                baudrate = int(config['button'].get('baudrate', '9600'))
+                logger.info(f"Using configured Arduino port: {arduino_port}")
+            else:
+                arduino_port = self.find_arduino_port()
+                baudrate = 9600
+                
             if arduino_port is None:
                 logger.error("Perangkat Arduino tidak ditemukan")
                 print("❌ Perangkat Arduino tidak ditemukan")
                 return
 
-            self.arduino = serial.Serial(arduino_port, 9600, timeout=1)
-            time.sleep(2)  # Tunggu Arduino reset
+            self.arduino = serial.Serial(arduino_port, baudrate, timeout=1)
+            time.sleep(1)  # Reduced delay for Arduino reset
             logger.info(f"Koneksi Arduino berhasil pada port {arduino_port}")
             print(f"✅ Arduino terdeteksi pada port {arduino_port}")
         except Exception as e:
             logger.error(f"Gagal koneksi ke Arduino: {str(e)}")
+            print(f"❌ Gagal koneksi ke Arduino: {str(e)}")
             self.arduino = None
 
     def create_ticket_image(self, data):
@@ -140,13 +153,15 @@ class ParkingClient:
             if not ticket_image:
                 return False
 
-            # Save temporary file
-            temp_file = "temp_ticket.bmp"
+            # Save temporary file with unique name to avoid conflicts
+            temp_file = f"temp_ticket_{int(time.time())}.bmp"
             ticket_image.save(temp_file)
 
-            # Print using default Windows printer
-            hprinter = win32print.OpenPrinter(self.printer_name)
+            # Print using Windows printer with proper error handling
+            hprinter = None
+            hdc = None
             try:
+                hprinter = win32print.OpenPrinter(self.printer_name)
                 hdc = win32ui.CreateDC()
                 hdc.CreatePrinterDC(self.printer_name)
                 
@@ -154,9 +169,28 @@ class ParkingClient:
                 hdc.StartDoc('Parking Ticket')
                 hdc.StartPage()
                 
-                # Load and print image
-                dib = ImageWin.Dib(ticket_image)
-                dib.draw(hdc.GetHandleOutput(), (0, 0, ticket_image.width, ticket_image.height))
+                # Fix missing import with direct module reference
+                try:
+                    from PIL import ImageWin
+                    dib = ImageWin.Dib(ticket_image)
+                    dib.draw(hdc.GetHandleOutput(), (0, 0, ticket_image.width, ticket_image.height))
+                except ImportError:
+                    # Alternative method if ImageWin is not available
+                    import win32con
+                    dib = win32ui.CreateDIBitmap(
+                        hdc,
+                        ticket_image.tobytes(),
+                        win32con.CBM_INIT,
+                        ticket_image.width,
+                        ticket_image.height
+                    )
+                    hdc.BitBlt(
+                        (0, 0),
+                        (ticket_image.width, ticket_image.height),
+                        dib,
+                        (0, 0),
+                        win32con.SRCCOPY
+                    )
                 
                 # End print job
                 hdc.EndPage()
@@ -166,11 +200,22 @@ class ParkingClient:
                 print("✅ Tiket berhasil dicetak")
                 return True
                 
+            except Exception as e:
+                logger.error(f"Error during printing process: {str(e)}")
+                print(f"❌ Kesalahan proses cetak: {str(e)}")
+                return False
             finally:
-                win32print.ClosePrinter(hprinter)
-                # Clean up
+                # Clean up resources properly
+                if hdc:
+                    hdc.DeleteDC()
+                if hprinter:
+                    win32print.ClosePrinter(hprinter)
+                # Remove temp file
                 if os.path.exists(temp_file):
-                    os.remove(temp_file)
+                    try:
+                        os.remove(temp_file)
+                    except Exception as e:
+                        logger.warning(f"Failed to remove temp file: {str(e)}")
             
         except Exception as e:
             logger.error(f"Error printing ticket: {str(e)}")

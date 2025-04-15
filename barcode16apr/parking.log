@@ -1,0 +1,12 @@
+2025-04-15 15:56:58,854 - ERROR - Error loading config: Bagian camera tidak ditemukan dalam config.ini
+2025-04-15 15:56:58,858 - ERROR - Fatal error: Gagal membaca konfigurasi: Bagian camera tidak ditemukan dalam config.ini
+2025-04-15 15:59:21,853 - ERROR - Error loading config: Bagian camera tidak ditemukan dalam config.ini
+2025-04-15 15:59:21,854 - ERROR - Fatal error: Gagal membaca konfigurasi: Bagian camera tidak ditemukan dalam config.ini
+2025-04-15 15:59:47,222 - ERROR - Error loading config: Bagian camera tidak ditemukan dalam config.ini
+2025-04-15 15:59:47,243 - ERROR - Fatal error: Gagal membaca konfigurasi: Bagian camera tidak ditemukan dalam config.ini
+2025-04-15 16:03:03,725 - ERROR - Error loading config: File contains no section headers.
+file: 'config.ini', line: 1
+'﻿[camera]\n'
+2025-04-15 16:03:03,727 - ERROR - Fatal error: Gagal membaca konfigurasi: File contains no section headers.
+file: 'config.ini', line: 1
+'﻿[camera]\n'

@@ -1,0 +1,46 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Vehicle List</h4>
+            <a href="{% url 'parking:vehicle_add' %}" class="btn btn-light">Add New Vehicle</a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>License Plate</th>
+                            <th>Vehicle Type</th>
+                            <th>Owner Name</th>
+                            <th>Owner Contact</th>
+                            <th>Created At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for vehicle in vehicles %}
+                        <tr>
+                            <td>{{ vehicle.license_plate }}</td>
+                            <td>{{ vehicle.vehicle_type }}</td>
+                            <td>{{ vehicle.owner_name }}</td>
+                            <td>{{ vehicle.owner_contact }}</td>
+                            <td>{{ vehicle.created_at|date:"Y-m-d H:i" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center">No vehicles registered yet</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="text-center mt-4">
+        <a href="{% url 'parking:dashboard' %}" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %} 
