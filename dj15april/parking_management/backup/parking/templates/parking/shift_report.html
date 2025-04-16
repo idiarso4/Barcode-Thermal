@@ -1,0 +1,236 @@
+{% extends 'parking/base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Shift Information Card -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Shift Information</h4>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <p><strong>Operator:</strong> {{ shift.operator.get_full_name }}</p>
+                    <p><strong>Start Time:</strong> {{ shift.start_time|date:"Y-m-d H:i" }}</p>
+                    <p><strong>End Time:</strong> 
+                        {% if shift.end_time %}
+                            {{ shift.end_time|date:"Y-m-d H:i" }}
+                        {% else %}
+                            Ongoing
+                        {% endif %}
+                    </p>
+                    <p><strong>Duration:</strong> 
+                        {% if shift.end_time %}
+                            {{ shift.start_time|timesince:shift.end_time }}
+                        {% else %}
+                            {{ shift.start_time|timesince }} (ongoing)
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-md-6">
+                    <div class="text-center">
+                        <h5>Key Metrics</h5>
+                        <div class="row">
+                            <div class="col-6">
+                                <div class="card bg-primary text-white">
+                                    <div class="card-body">
+                                        <h3>{{ shift.total_vehicles }}</h3>
+                                        <p class="mb-0">Total Vehicles</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-6">
+                                <div class="card bg-success text-white">
+                                    <div class="card-body">
+                                        <h3>Rp {{ shift.total_revenue }}</h3>
+                                        <p class="mb-0">Total Revenue</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="row mb-4">
+        <!-- Hourly Activity Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Hourly Activity</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="hourlyActivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <!-- Revenue Distribution Chart -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Revenue Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="revenueChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Parking Sessions Table -->
+    <div class="card mb-4">
+        <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Parking Sessions</h4>
+            <a href="{% url 'parking:export_shift_report' shift.id %}" class="btn btn-light">
+                <i class="fas fa-file-excel"></i> Export to Excel
+            </a>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Check-in Time</th>
+                            <th>Check-out Time</th>
+                            <th>Vehicle</th>
+                            <th>Spot</th>
+                            <th>Duration</th>
+                            <th>Fee</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for session in shift.parking_sessions.all %}
+                        <tr>
+                            <td>{{ session.check_in_time|date:"H:i" }}</td>
+                            <td>
+                                {% if session.check_out_time %}
+                                    {{ session.check_out_time|date:"H:i" }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ session.vehicle_license_plate }}</td>
+                            <td>{{ session.parking_spot.identifier }}</td>
+                            <td>
+                                {% if session.check_out_time %}
+                                    {{ session.check_in_time|timesince:session.check_out_time }}
+                                {% else %}
+                                    {{ session.check_in_time|timesince }} (ongoing)
+                                {% endif %}
+                            </td>
+                            <td>Rp {{ session.fee }}</td>
+                            <td>
+                                {% if session.check_out_time %}
+                                    <span class="badge bg-secondary">Completed</span>
+                                {% else %}
+                                    <span class="badge bg-success">Active</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="7" class="text-center">No parking sessions recorded</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    {% if shift.notes %}
+    <div class="card mb-4">
+        <div class="card-header">
+            <h5 class="mb-0">Shift Notes</h5>
+        </div>
+        <div class="card-body">
+            {{ shift.notes|linebreaks }}
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-4">
+        <a href="{% url 'parking:shift_list' %}" class="btn btn-secondary">Back to Shift List</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.7.0/dist/chart.min.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Hourly Activity Chart
+    const hourlyCtx = document.getElementById('hourlyActivityChart').getContext('2d');
+    new Chart(hourlyCtx, {
+        type: 'line',
+        data: {
+            labels: {{ hourly_labels|safe }},
+            datasets: [{
+                label: 'Check-ins',
+                data: {{ hourly_checkins }},
+                borderColor: 'rgb(75, 192, 192)',
+                tension: 0.1
+            }, {
+                label: 'Check-outs',
+                data: {{ hourly_checkouts }},
+                borderColor: 'rgb(255, 99, 132)',
+                tension: 0.1
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Hourly Vehicle Activity'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
+            }
+        }
+    });
+
+    // Revenue Distribution Chart
+    const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(revenueCtx, {
+        type: 'pie',
+        data: {
+            labels: ['< 1 hour', '1-2 hours', '2-4 hours', '4+ hours'],
+            datasets: [{
+                data: {{ revenue_distribution }},
+                backgroundColor: [
+                    'rgb(255, 99, 132)',
+                    'rgb(54, 162, 235)',
+                    'rgb(255, 206, 86)',
+                    'rgb(75, 192, 192)'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Revenue by Duration'
+                }
+            }
+        }
+    });
+});
+</script>
+{% endblock %} 

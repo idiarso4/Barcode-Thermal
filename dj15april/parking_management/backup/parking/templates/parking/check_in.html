@@ -1,0 +1,38 @@
+{% extends 'parking/base.html' %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header bg-info text-white">
+            <h4 class="mb-0">Check-in Vehicle</h4>
+        </div>
+        <div class="card-body">
+            <form method="post">
+                {% csrf_token %}
+                <div class="mb-3">
+                    <label for="vehicle" class="form-label">Vehicle</label>
+                    <select name="vehicle" id="vehicle" class="form-select" required>
+                        <option value="">Select a vehicle</option>
+                        {% for vehicle in vehicles %}
+                        <option value="{{ vehicle.id }}">{{ vehicle.license_plate }} - {{ vehicle.vehicle_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label for="parking_spot" class="form-label">Parking Spot</label>
+                    <select name="parking_spot" id="parking_spot" class="form-select" required>
+                        <option value="">Select a parking spot</option>
+                        {% for spot in spots %}
+                        <option value="{{ spot.id }}">{{ spot.identifier }} ({{ spot.spot_type }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="text-center">
+                    <button type="submit" class="btn btn-primary">Check In</button>
+                    <a href="{% url 'parking:dashboard' %}" class="btn btn-secondary">Cancel</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %} 

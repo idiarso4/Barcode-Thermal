@@ -1,0 +1,7 @@
+Django>=5.2
+psycopg2-binary>=2.9.9
+pandas>=2.2.1
+xlsxwriter>=3.1.9
+djangorestframework>=3.14.0
+djangorestframework-simplejwt>=5.3.1
+django-cors-headers>=4.3.1 
