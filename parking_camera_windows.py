@@ -45,7 +45,7 @@ class ParkingCamera:
         
         # Tambahkan state untuk debounce
         self.last_button_press = 0
-        self.debounce_delay = 3.0  # Ubah dari 30 detik menjadi 3 detik
+        self.debounce_delay = 1.0  # Ubah menjadi 1 detik
         self.button_mode = "keyboard"  # Default to keyboard mode
         
         # Add additional timing parameters
@@ -69,20 +69,14 @@ class ParkingCamera:
         # Setup database
         self.setup_database()
         
-        # Load counter
+        # Initialize counter and capture time
         self.load_counter()
+        self.last_capture_time = 0
         
+        # Initialize image comparison parameters
         self.last_image = None
-        self.last_capture_time = None
         self.min_image_diff = 0.15
         self.check_similar_images = False
-        
-        self.load_counter = 0
-        self.last_capture_time = 0
-        self.button_state = False
-        self.last_button_state = False
-        self.last_debounce_time = 0
-        self.debounce_delay = 50  # ms
         
         logger.info("Sistem parkir berhasil diinisialisasi")
 
@@ -142,7 +136,6 @@ class ParkingCamera:
                             raise Exception("Gagal membaca frame dari kamera IP")
                     else:
                         raise Exception("Gagal membuka koneksi RTSP")
-                    
                 except Exception as e:
                     logger.error(f"Gagal koneksi ke kamera IP: {str(e)}")
                     print(f"❌ Error koneksi kamera IP: {str(e)}")
@@ -180,51 +173,46 @@ class ParkingCamera:
             self.camera = None
             self.connection_status['is_connected'] = False
             self.connection_status['camera_type'] = 'Dummy'
-            return
-                
+            
         except Exception as e:
             logger.error(f"Error setting up camera: {str(e)}")
             raise Exception(f"Gagal setup kamera: {str(e)}")
 
     def capture_image(self):
-        """Ambil gambar dari kamera atau generate dummy image"""
+        """Ambil gambar dari kamera atau buat dummy image jika kamera tidak tersedia"""
         try:
-            # Generate nama file berdasarkan timestamp
-            timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
-            counter = str(random.randint(1000, 9999))
-            filename = f"TKT{timestamp}_{counter}.jpg"
+            # Generate filename
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            counter = self.load_counter()
+            filename = f"{timestamp}_{counter:04d}.jpg"
             filepath = os.path.join(self.capture_dir, filename)
             
-            if self.camera is not None and self.camera.isOpened():
-                print("📸 Mengambil gambar dari kamera...")
+            # Coba ambil gambar dari kamera jika tersedia
+            if self.camera:
+                print("\n📸 Mengambil gambar dari kamera...")
                 
-                # Ambil beberapa frame untuk stabilisasi
-                for _ in range(3):
-                    self.camera.read()
-                    time.sleep(0.1)
+                # Stabilize camera - read beberapa frame
+                for _ in range(5):
+                    ret = self.camera.read()[0]
                 
-                # Ambil gambar
+                # Capture frame
                 ret, frame = self.camera.read()
+                
                 if ret:
-                    # Resize gambar untuk mengurangi ukuran file
-                    scale_percent = 50  # Kurangi ukuran 50%
-                    width = int(frame.shape[1] * scale_percent / 100)
-                    height = int(frame.shape[0] * scale_percent / 100)
+                    # Resize untuk mengurangi ukuran file
+                    height = int(self.config['image']['height'])
+                    width = int(self.config['image']['width'])
                     frame = cv2.resize(frame, (width, height))
                     
-                    # Kompres gambar dengan kualitas lebih rendah
-                    encode_param = [
-                        cv2.IMWRITE_JPEG_QUALITY, 60,  # Kualitas JPEG 60%
-                        cv2.IMWRITE_JPEG_OPTIMIZE, 1,
-                        cv2.IMWRITE_JPEG_PROGRESSIVE, 1
-                    ]
+                    # Simpan dengan kompresi
+                    cv2.imwrite(filepath, frame, [
+                        cv2.IMWRITE_JPEG_QUALITY, 90,
+                        cv2.IMWRITE_JPEG_OPTIMIZE, 1
+                    ])
                     
-                    # Simpan gambar dengan kompresi tinggi
-                    cv2.imwrite(filepath, frame, encode_param)
-                    
-                    # Cek ukuran file
-                    file_size = os.path.getsize(filepath) / 1024  # Size in KB
-                    print(f"✅ Gambar disimpan: {filename} ({file_size:.1f} KB)")
+                    # Hitung ukuran file dalam KB
+                    file_size = os.path.getsize(filepath) / 1024
+                    print(f"✅ File disimpan: {filename} ({file_size:.1f} KB)")
                     
                     # Simpan metadata
                     metadata = {
@@ -403,47 +391,126 @@ class ParkingCamera:
                 self.db_conn.rollback()
 
     def print_ticket(self, ticket_id):
-        """Cetak tiket parkir"""
+        """Cetak tiket parkir dengan barcode"""
         if not self.printer_available:
             print("❌ Printer tidak tersedia")
             return False
             
         try:
-            # Buka printer
+            # Set harga tetap
+            price = 2500  # Harga default Rp 2.500
+            
+            print(f"\nMencoba mencetak ke printer: {self.printer_name}")
             printer_handle = win32print.OpenPrinter(self.printer_name)
+            print("✅ Printer berhasil dibuka")
             
-            # Format tiket
-            ticket_text = f"""
-================================
-    TIKET PARKIR RSI BNA
-================================
-
-Nomor: {ticket_id}
-Tanggal: {datetime.now().strftime('%d/%m/%Y')}
-Jam Masuk: {datetime.now().strftime('%H:%M:%S')}
-
---------------------------------
-Simpan tiket ini dengan baik.
-Kehilangan tiket dikenakan
-denda sesuai ketentuan.
-================================
-
-"""
-            # Cetak tiket
+            # Initialize printer commands
+            commands = bytearray()
+            
+            # Reset printer
+            commands.extend(b"\x1B\x40")  # ESC @ - Initialize printer
+            
+            # Select character code table (PC437 USA)
+            commands.extend(b"\x1B\x74\x00")  # ESC t 0
+            
+            # Set line spacing to 30 dots
+            commands.extend(b"\x1B\x33\x1E")  # ESC 3 30
+            
+            # Center alignment
+            commands.extend(b"\x1B\x61\x01")  # ESC a 1
+            
+            # Double width & height
+            commands.extend(b"\x1D\x21\x11")  # GS ! 17
+            
+            # Format tiket with simpler text
+            ticket_text = (
+                "\x1B\x21\x30"  # Select double width/height
+                "TIKET PARKIR\n\n"
+                "\x1B\x21\x00"  # Reset text size
+                f"No: {ticket_id}\n"
+                f"Tgl: {datetime.now().strftime('%d/%m/%Y')}\n"
+                f"Jam: {datetime.now().strftime('%H:%M:%S')}\n"
+                f"Tarif: Rp {price:,}\n\n"
+            ).encode('ascii', errors='replace')
+            
+            # Prepare barcode data (clean up non-supported characters)
+            barcode_data = ''.join(c for c in ticket_id if c.isalnum())
+            
+            # Set up barcode
+            barcode_commands = bytearray()
+            barcode_commands.extend(b"\x1D\x68\x50")  # GS h 80 - Set barcode height to 80 dots
+            barcode_commands.extend(b"\x1D\x77\x02")  # GS w 2 - Set barcode width (2=medium)
+            barcode_commands.extend(b"\x1D\x48\x02")  # GS H 2 - Print HRI characters below barcode
+            barcode_commands.extend(b"\x1D\x66\x00")  # GS f 0 - Select font for HRI characters
+            
+            # Print barcode (CODE128)
+            barcode_commands.extend(b"\x1D\x6B\x49")  # GS k I - Select CODE128
+            barcode_commands.extend(bytes([len(barcode_data)]))  # Length of data
+            barcode_commands.extend(barcode_data.encode('ascii'))  # Barcode data
+            
+            print("Memulai pencetakan...")
+            
+            # Start print job
             job = win32print.StartDocPrinter(printer_handle, 1, ("Tiket Parkir", None, "RAW"))
-            win32print.StartPagePrinter(printer_handle)
-            win32print.WritePrinter(printer_handle, ticket_text.encode('utf-8'))
-            win32print.EndPagePrinter(printer_handle)
-            win32print.EndDocPrinter(printer_handle)
-            win32print.ClosePrinter(printer_handle)
+            if job == 0:
+                raise Exception("StartDocPrinter failed")
+            print("✅ Print job dimulai")
             
-            print("✅ Tiket berhasil dicetak")
+            win32print.StartPagePrinter(printer_handle)
+            print("✅ Halaman dimulai")
+            
+            # Send initialization and commands
+            bytes_written = win32print.WritePrinter(printer_handle, commands)
+            print(f"✅ Command dikirim: {bytes_written} bytes")
+            
+            # Send ticket text
+            bytes_written = win32print.WritePrinter(printer_handle, ticket_text)
+            print(f"✅ Teks tiket dikirim: {bytes_written} bytes")
+            
+            # Send barcode
+            bytes_written = win32print.WritePrinter(printer_handle, barcode_commands)
+            print(f"✅ Barcode dikirim: {bytes_written} bytes")
+            
+            # Footer text
+            footer_text = (
+                "\n\nSimpan tiket ini\n"
+                "Kehilangan tiket akan\n"
+                "dikenakan denda\n"
+                "================\n\n"
+            ).encode('ascii')
+            
+            bytes_written = win32print.WritePrinter(printer_handle, footer_text)
+            print(f"✅ Footer dikirim: {bytes_written} bytes")
+            
+            # Feed and cut
+            cut_commands = (
+                b"\x1B\x64\x05"  # Feed 5 lines (ESC d 5)
+                b"\x1D\x56\x41\x03"  # Cut paper with feed (GS V A 3)
+            )
+            bytes_written = win32print.WritePrinter(printer_handle, cut_commands)
+            print(f"✅ Perintah potong kertas dikirim: {bytes_written} bytes")
+            
+            # End print job properly
+            win32print.EndPagePrinter(printer_handle)
+            print("✅ Halaman selesai")
+            
+            win32print.EndDocPrinter(printer_handle)
+            print("✅ Print job selesai")
+            
+            win32print.ClosePrinter(printer_handle)
+            print("✅ Printer ditutup")
+            
             logger.info(f"Tiket {ticket_id} berhasil dicetak")
             return True
             
         except Exception as e:
             print(f"❌ Gagal mencetak tiket: {str(e)}")
             logger.error(f"Print error: {str(e)}")
+            if 'printer_handle' in locals():
+                try:
+                    win32print.ClosePrinter(printer_handle)
+                except:
+                    pass
             return False
 
     def run(self):
@@ -579,7 +646,7 @@ denda sesuai ketentuan.
             logger.error(f"Error during cleanup: {str(e)}")
 
     def load_counter(self):
-        """Load ticket counter from file"""
+        """Load atau inisialisasi counter untuk nomor urut file"""
         try:
             if os.path.exists(self.counter_file):
                 with open(self.counter_file, 'r') as f:
@@ -589,9 +656,20 @@ denda sesuai ketentuan.
                 with open(self.counter_file, 'w') as f:
                     f.write(str(self.counter))
             logger.info(f"Counter loaded: {self.counter}")
+            return self.counter
         except Exception as e:
             logger.error(f"Error loading counter: {str(e)}")
             self.counter = 0
+            return self.counter
+
+    def save_counter(self):
+        """Simpan nilai counter ke file"""
+        try:
+            with open(self.counter_file, 'w') as f:
+                f.write(str(self.counter))
+            logger.info(f"Counter saved: {self.counter}")
+        except Exception as e:
+            logger.error(f"Error saving counter: {str(e)}")
 
     def save_to_database(self, ticket_number, image_path):
         """Simpan data tiket ke database"""
