@@ -570,3 +570,12 @@
 2025-04-06 14:22:34,197 - ERROR - Connection test failed: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x000002344EE28AD0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
 2025-04-06 14:22:34,199 - DEBUG - Menerima pesan tes dari Arduino: READY
 2025-04-06 14:22:57,367 - INFO - Menerima nomor plat dari Arduino: 1
+2025-04-17 07:57:50,735 - INFO - Printer tersedia: ['Send To OneNote 2010', 'OneNote for Windows 10', 'Microsoft XPS Document Writer', 'Microsoft Print to PDF', 'Fax', 'EPSON TM-T82X Receipt', 'AnyDesk Printer']
+2025-04-17 07:57:50,736 - INFO - Printer EPSON ditemukan: EPSON TM-T82X Receipt
+2025-04-17 07:57:52,738 - INFO - Koneksi Arduino berhasil pada port COM7
+2025-04-17 07:57:52,756 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-17 07:57:54,801 - ERROR - Connection error: HTTPConnectionPool(host='192.168.2.6', port=5051): Max retries exceeded with url: /api/test (Caused by NewConnectionError('<urllib3.connection.HTTPConnection object at 0x0000013A5177B0E0>: Failed to establish a new connection: [WinError 10061] No connection could be made because the target machine actively refused it'))
+2025-04-17 07:57:54,805 - INFO - Received from Arduino: READY
+2025-04-17 07:57:54,807 - INFO - Sending data to server: {"plat": "READY", "vehicleType": "Motor", "vehicleTypeId": 2, "officeId": "OFF0001", "isParked": true}
+2025-04-17 07:57:54,811 - DEBUG - Starting new HTTP connection (1): 192.168.2.6:5051
+2025-04-17 07:57:56,863 - ERROR - Connection error - server tidak dapat dijangkau

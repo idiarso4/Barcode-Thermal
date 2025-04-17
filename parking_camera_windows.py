@@ -15,6 +15,8 @@ import psycopg2
 from psycopg2 import Error
 import random
 import msvcrt
+import barcode
+from barcode.writer import ImageWriter
 
 # Setup logging
 logging.basicConfig(
@@ -282,15 +284,74 @@ class ParkingCamera:
             return False, None
 
     def setup_button(self):
-        """Setup push button connection"""
-        logging.info("\nMencoba koneksi ke pushbutton di port COM7...")
+        """Setup koneksi ke pushbutton melalui serial Arduino"""
+        print("\nMencoba koneksi ke Arduino pushbutton...")
+        logging.info("Mencoba koneksi ke pushbutton...")
+        
         try:
-            self.button = serial.Serial('COM7', 9600, timeout=1)
-            logging.info("✅ Push button terkoneksi")
+            # Coba semua port COM dari 1-10
+            for port_num in range(1, 11):
+                port = f'COM{port_num}'
+                try:
+                    print(f"Mencoba port {port}...")
+                    self.button = serial.Serial(
+                        port=port,
+                        baudrate=9600,
+                        bytesize=serial.EIGHTBITS,
+                        parity=serial.PARITY_NONE,
+                        stopbits=serial.STOPBITS_ONE,
+                        timeout=1
+                    )
+                    time.sleep(2)  # Berikan waktu Arduino untuk reset
+                    
+                    # Bersihkan buffer
+                    while self.button.in_waiting:
+                        self.button.read_all()
+                        
+                    # Kirim perintah test
+                    self.button.write(b'test\n')
+                    time.sleep(1)  # Tunggu respons lebih lama
+                    
+                    # Baca respons
+                    if self.button.in_waiting:
+                        response = self.button.read_all().decode(errors='ignore').strip()
+                        print(f"Respons dari {port}: {response}")
+                        if any(signal in response.upper() for signal in ['READY', 'OK', 'ARDUINO']):
+                            print(f"✅ Arduino terdeteksi di port {port}")
+                            logging.info(f"Push button Arduino terkoneksi di port {port}")
+                            self.button_mode = "arduino"
+                            self.current_port = port
+                            return
+                    
+                    # Jika tidak ada respons yang valid, tutup port
+                    self.button.close()
+                    
+                except serial.SerialException as se:
+                    print(f"Port {port} tidak tersedia: {str(se)}")
+                    continue
+                except Exception as e:
+                    print(f"Error pada port {port}: {str(e)}")
+                    if hasattr(self, 'button') and self.button and self.button.is_open:
+                        self.button.close()
+                    continue
+                    
+            # Jika tidak ada Arduino yang terdeteksi
+            print("\n⚠️ Tidak ada Arduino yang terdeteksi")
+            self.button_mode = "keyboard"
+            
         except Exception as e:
-            logging.warning(f"\n⚠️ Error koneksi push button: {str(e)}")
-            logging.info("ℹ️ Menggunakan keyboard sebagai input alternatif (tekan '1')")
-            self.button = None
+            print(f"⚠️ Error koneksi push button: {str(e)}")
+            logging.warning(f"Error koneksi push button: {str(e)}")
+            
+        # Mode fallback ke keyboard
+        logging.info("Menggunakan keyboard sebagai input alternatif")
+        print("\n⚠️ Pushbutton Arduino tidak terdeteksi")
+        print("ℹ️ Menggunakan mode keyboard:")
+        print("  - Tombol '1' pada keyboard")
+        print("  - Tombol SPASI pada keyboard")
+        print("  - Tombol ENTER pada keyboard")
+        self.button = None
+        self.button_mode = "keyboard"
 
     def setup_printer(self):
         """Setup printer thermal menggunakan win32print"""
@@ -390,128 +451,92 @@ class ParkingCamera:
             if self.db_conn:
                 self.db_conn.rollback()
 
-    def print_ticket(self, ticket_id):
-        """Cetak tiket parkir dengan barcode"""
+    def print_ticket(self, filename):
+        """Cetak tiket parkir menggunakan win32print"""
         if not self.printer_available:
-            print("❌ Printer tidak tersedia")
-            return False
-            
+            logger.info("Melewati pencetakan tiket - printer tidak tersedia")
+            return
+
         try:
-            # Set harga tetap
-            price = 2500  # Harga default Rp 2.500
+            # Parse data dari filename
+            ticket_number = filename.replace('.jpg', '')
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             
-            print(f"\nMencoba mencetak ke printer: {self.printer_name}")
+            print(f"\nMencetak tiket:")
+            print(f"Nomor: {ticket_number}")
+            print(f"Waktu: {timestamp}")
+            
+            # Buka printer
             printer_handle = win32print.OpenPrinter(self.printer_name)
-            print("✅ Printer berhasil dibuka")
+            print("✅ Berhasil membuka koneksi printer")
             
-            # Initialize printer commands
-            commands = bytearray()
+            # Start document
+            job_id = win32print.StartDocPrinter(printer_handle, 1, ("Parking Ticket", None, "RAW"))
+            win32print.StartPagePrinter(printer_handle)
             
-            # Reset printer
-            commands.extend(b"\x1B\x40")  # ESC @ - Initialize printer
-            
-            # Select character code table (PC437 USA)
-            commands.extend(b"\x1B\x74\x00")  # ESC t 0
-            
-            # Set line spacing to 30 dots
-            commands.extend(b"\x1B\x33\x1E")  # ESC 3 30
+            # Initialize printer dan reset
+            win32print.WritePrinter(printer_handle, b"\x1B\x40")  # Initialize printer
             
             # Center alignment
-            commands.extend(b"\x1B\x61\x01")  # ESC a 1
+            win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
             
-            # Double width & height
-            commands.extend(b"\x1D\x21\x11")  # GS ! 17
+            # Header - double height & width
+            win32print.WritePrinter(printer_handle, b"\x1B\x21\x30")  # Double width & height
+            win32print.WritePrinter(printer_handle, b"RSI BANJARNEGARA\n")
+            win32print.WritePrinter(printer_handle, b"TIKET PARKIR\n")
+            win32print.WritePrinter(printer_handle, b"\x1B\x21\x00")  # Normal text
+            win32print.WritePrinter(printer_handle, b"================================\n")
             
-            # Format tiket with simpler text
-            ticket_text = (
-                "\x1B\x21\x30"  # Select double width/height
-                "TIKET PARKIR\n\n"
-                "\x1B\x21\x00"  # Reset text size
-                f"No: {ticket_id}\n"
-                f"Tgl: {datetime.now().strftime('%d/%m/%Y')}\n"
-                f"Jam: {datetime.now().strftime('%H:%M:%S')}\n"
-                f"Tarif: Rp {price:,}\n\n"
-            ).encode('ascii', errors='replace')
+            # Ticket details - left align
+            win32print.WritePrinter(printer_handle, b"\x1B\x61\x00")  # Left alignment
+            win32print.WritePrinter(printer_handle, f"Nomor : {ticket_number}\n".encode())
+            win32print.WritePrinter(printer_handle, f"Waktu : {timestamp}\n".encode())
+            win32print.WritePrinter(printer_handle, b"================================\n\n")
             
-            # Prepare barcode data (clean up non-supported characters)
-            barcode_data = ''.join(c for c in ticket_id if c.isalnum())
+            # Center untuk barcode
+            win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
             
-            # Set up barcode
-            barcode_commands = bytearray()
-            barcode_commands.extend(b"\x1D\x68\x50")  # GS h 80 - Set barcode height to 80 dots
-            barcode_commands.extend(b"\x1D\x77\x02")  # GS w 2 - Set barcode width (2=medium)
-            barcode_commands.extend(b"\x1D\x48\x02")  # GS H 2 - Print HRI characters below barcode
-            barcode_commands.extend(b"\x1D\x66\x00")  # GS f 0 - Select font for HRI characters
+            # Reset text size to normal before barcode
+            win32print.WritePrinter(printer_handle, b"\x1B\x21\x00")  # Normal text
             
-            # Print barcode (CODE128)
-            barcode_commands.extend(b"\x1D\x6B\x49")  # GS k I - Select CODE128
-            barcode_commands.extend(bytes([len(barcode_data)]))  # Length of data
-            barcode_commands.extend(barcode_data.encode('ascii'))  # Barcode data
+            # Barcode configuration - CODE39
+            win32print.WritePrinter(printer_handle, b"\x1D\x48\x02")  # HRI below barcode
+            win32print.WritePrinter(printer_handle, b"\x1D\x68\x50")  # Barcode height = 80 dots
+            win32print.WritePrinter(printer_handle, b"\x1D\x77\x02")  # Barcode width = 2
             
-            print("Memulai pencetakan...")
+            # Use CODE39 with clear format
+            win32print.WritePrinter(printer_handle, b"\x1D\x6B\x04")  # Select CODE39
             
-            # Start print job
-            job = win32print.StartDocPrinter(printer_handle, 1, ("Tiket Parkir", None, "RAW"))
-            if job == 0:
-                raise Exception("StartDocPrinter failed")
-            print("✅ Print job dimulai")
+            # Simplify ticket number for better scanning
+            simple_number = ticket_number.split('_')[1] if '_' in ticket_number else ticket_number[-10:]
+            barcode_data = f"*{simple_number}*".encode()  # Format CODE39
+            win32print.WritePrinter(printer_handle, barcode_data)
             
-            win32print.StartPagePrinter(printer_handle)
-            print("✅ Halaman dimulai")
+            # Extra space after barcode
+            win32print.WritePrinter(printer_handle, b"\n\n")
             
-            # Send initialization and commands
-            bytes_written = win32print.WritePrinter(printer_handle, commands)
-            print(f"✅ Command dikirim: {bytes_written} bytes")
-            
-            # Send ticket text
-            bytes_written = win32print.WritePrinter(printer_handle, ticket_text)
-            print(f"✅ Teks tiket dikirim: {bytes_written} bytes")
-            
-            # Send barcode
-            bytes_written = win32print.WritePrinter(printer_handle, barcode_commands)
-            print(f"✅ Barcode dikirim: {bytes_written} bytes")
-            
-            # Footer text
-            footer_text = (
-                "\n\nSimpan tiket ini\n"
-                "Kehilangan tiket akan\n"
-                "dikenakan denda\n"
-                "================\n\n"
-            ).encode('ascii')
-            
-            bytes_written = win32print.WritePrinter(printer_handle, footer_text)
-            print(f"✅ Footer dikirim: {bytes_written} bytes")
+            # Footer - center align
+            win32print.WritePrinter(printer_handle, b"\x1B\x61\x01")  # Center alignment
+            win32print.WritePrinter(printer_handle, b"Terima kasih\n")
+            win32print.WritePrinter(printer_handle, b"Jangan hilangkan tiket ini\n")
             
             # Feed and cut
-            cut_commands = (
-                b"\x1B\x64\x05"  # Feed 5 lines (ESC d 5)
-                b"\x1D\x56\x41\x03"  # Cut paper with feed (GS V A 3)
-            )
-            bytes_written = win32print.WritePrinter(printer_handle, cut_commands)
-            print(f"✅ Perintah potong kertas dikirim: {bytes_written} bytes")
+            win32print.WritePrinter(printer_handle, b"\x1B\x64\x05")  # Feed 5 lines
+            win32print.WritePrinter(printer_handle, b"\x1D\x56\x41\x00")  # Cut paper
             
-            # End print job properly
+            print("✅ Berhasil mengirim data ke printer")
+            
+            # Close printer
             win32print.EndPagePrinter(printer_handle)
-            print("✅ Halaman selesai")
-            
             win32print.EndDocPrinter(printer_handle)
-            print("✅ Print job selesai")
-            
             win32print.ClosePrinter(printer_handle)
-            print("✅ Printer ditutup")
             
-            logger.info(f"Tiket {ticket_id} berhasil dicetak")
-            return True
+            logger.info(f"Tiket berhasil dicetak: {filename}")
+            print("✅ Tiket berhasil dicetak")
             
         except Exception as e:
+            logger.error(f"Gagal mencetak tiket: {str(e)}")
             print(f"❌ Gagal mencetak tiket: {str(e)}")
-            logger.error(f"Print error: {str(e)}")
-            if 'printer_handle' in locals():
-                try:
-                    win32print.ClosePrinter(printer_handle)
-                except:
-                    pass
-            return False
 
     def run(self):
         """Main loop program"""
@@ -520,15 +545,45 @@ class ParkingCamera:
     SISTEM PARKIR RSI BNA    
 ================================
 """)
+        
+        # Tampilkan mode operasi
         if self.connection_status['camera_type'] == 'IP Dahua':
-            print("Mode: Kamera IP Dahua")
+            print("Mode Kamera: IP Dahua")
             print(f"IP: {self.config['camera']['ip']}")
             print(f"Resolution: 1920x1080 (Main) / 704x576 (Sub)")
+        elif self.connection_status['camera_type'] == 'Local':
+            print("Mode Kamera: Local Camera")
         else:
-            print("Mode: Pushbutton (Tanpa Kamera)")
+            print("Mode Kamera: Dummy (Tanpa Kamera)")
+        
+        # Tampilkan mode input    
+        if hasattr(self, 'button_mode'):
+            if self.button_mode == "arduino":
+                print("\nMode Input: Arduino Pushbutton")
+            else:
+                print("\nMode Input: Keyboard")
+        else:
+            print("\nMode Input: Keyboard")
             
-        print("Status: Menunggu input dari pushbutton...")
-        print()
+        # Tampilkan status printer
+        print(f"\nStatus Printer: {'Tersedia - ' + self.printer_name if self.printer_available else 'Tidak Tersedia'}")
+            
+        # Tampilkan petunjuk input
+        print("\nStatus: Menunggu input...")
+        print("\nPesan untuk operator:")
+        print("1. Gunakan salah satu metode berikut untuk mencetak tiket:")
+        
+        if hasattr(self, 'button_mode') and self.button_mode == "arduino":
+            print("   - Tekan tombol fisik pada perangkat pushbutton")
+        
+        print("   - Tekan tombol '1' pada keyboard")
+        print("   - Tekan tombol SPASI pada keyboard")
+        print("   - Tekan tombol ENTER pada keyboard")
+        
+        print("\n2. Jangan tekan tombol terlalu cepat (minimal jeda 1 detik)")
+        print("3. Pastikan printer dalam keadaan siap (kertas tersedia)")
+        
+        print("\n" + "="*32)
         
         try:
             while True:
@@ -539,42 +594,80 @@ class ParkingCamera:
                 time.sleep(self.button_check_interval)
                 
         except KeyboardInterrupt:
-            print("\nProgram dihentikan...")
+            print("\nProgram dihentikan dengan Ctrl+C...")
         finally:
             self.cleanup()
 
     def check_button(self):
-        """Cek status pushbutton dan keyboard dengan debounce dan toleransi"""
+        """Cek status pushbutton dan keyboard dengan debounce"""
         try:
             current_time = time.time()
-            button_pressed = False
             
-            # Cek keyboard input
+            # Cek keyboard input (selalu aktif)
             if msvcrt.kbhit():
                 key = msvcrt.getch()
-                if key == b'1':  # Jika tombol '1' ditekan
-                    print("\n⌨️ Tombol '1' terdeteksi")
+                # Menerima tombol '1', spasi (32), atau enter (13)
+                if key in [b'1', b' ', b'\r']:
+                    key_name = "1" if key == b'1' else "SPASI" if key == b' ' else "ENTER"
+                    
+                    # Cek debounce
                     if current_time - self.last_button_press >= self.debounce_delay:
+                        print(f"\n⌨️ Tombol {key_name} terdeteksi")
                         self.last_button_press = current_time
-                        button_pressed = True
-                        logger.info("Tombol keyboard '1' terdeteksi")
+                        logger.info(f"Tombol keyboard {key_name} terdeteksi")
+                        
+                        # Jika Arduino terhubung, kirim signal untuk gate
+                        if self.button_mode == "arduino" and hasattr(self, 'button') and self.button and self.button.is_open:
+                            try:
+                                self.button.write(b'trigger\n')
+                                logger.info("Trigger command sent to Arduino")
+                            except:
+                                pass
                         return True
                     else:
                         remaining = self.debounce_delay - (current_time - self.last_button_press)
-                        print(f"\n⏳ Mohon tunggu {remaining:.1f} detik lagi...")
+                        print(f"\n⏳ Mohon tunggu {remaining:.1f} detik...")
                         return False
             
-            # Cek pushbutton fisik jika tersedia
-            if hasattr(self, 'button') and self.button is not None and self.button.in_waiting:
-                data = self.button.read_all().decode().strip()
-                if data and current_time - self.last_button_press >= self.debounce_delay:
-                    print("\n🔘 Push button fisik terdeteksi")
-                    self.last_button_press = current_time
-                    button_pressed = True
-                    logger.info("Push button terdeteksi")
-                    return True
-                    
-            return button_pressed
+            # Cek pushbutton Arduino jika dalam mode arduino
+            if self.button_mode == "arduino" and hasattr(self, 'button') and self.button and self.button.is_open:
+                try:
+                    if self.button.in_waiting:
+                        data = self.button.read_all().decode(errors='ignore').strip()
+                        print(f"Data dari Arduino: {data}")  # Debug print
+                        
+                        # Cek berbagai format trigger
+                        if any(signal in data.upper() for signal in ['PRESS', 'BUTTON', 'TRIGGER', '1', 'ON']):
+                            # Cek debounce
+                            if current_time - self.last_button_press >= self.debounce_delay:
+                                print("\n🔘 Push button terdeteksi")
+                                self.last_button_press = current_time
+                                logger.info("Push button Arduino terdeteksi")
+                                
+                                # Clear buffer
+                                self.button.reset_input_buffer()
+                                return True
+                            else:
+                                remaining = self.debounce_delay - (current_time - self.last_button_press)
+                                print(f"\n⏳ Mohon tunggu {remaining:.1f} detik...")
+                                self.button.reset_input_buffer()
+                                return False
+                                
+                except Exception as e:
+                    logger.error(f"Error membaca Arduino: {str(e)}")
+                    # Switch ke mode keyboard jika ada error
+                    print(f"\n⚠️ Error pada Arduino: {str(e)}")
+                    print("⚠️ Beralih ke mode keyboard")
+                    self.button_mode = "keyboard"
+                    if hasattr(self, 'button') and self.button:
+                        try:
+                            self.button.close()
+                        except:
+                            pass
+                        self.button = None
+                    return False
+            
+            return False
             
         except Exception as e:
             logger.error(f"Error membaca input: {str(e)}")
@@ -616,7 +709,7 @@ class ParkingCamera:
                 print(f"\n3. Status printer: {'Tersedia' if self.printer_available else 'Tidak tersedia'}")
                 if self.printer_available:
                     print("\n4. Mencoba cetak tiket...")
-                    self.print_ticket(ticket_number)
+                    self.print_ticket(filename)
                 else:
                     print("\n❌ Printer tidak tersedia, tiket tidak bisa dicetak")
                 
