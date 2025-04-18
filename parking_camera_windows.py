@@ -284,12 +284,78 @@ class ParkingCamera:
             return False, None
 
     def setup_button(self):
-        """Setup koneksi ke pushbutton melalui serial Arduino"""
+        """Setup koneksi ke pushbutton melalui serial Arduino dengan fitur auto-reconnect"""
         print("\nMencoba koneksi ke Arduino pushbutton...")
         logging.info("Mencoba koneksi ke pushbutton...")
         
+        # Inisialisasi variabel reconnect
+        self.last_reconnect_attempt = 0
+        self.reconnect_delay = 30  # 30 detik delay antar percobaan reconnect
+        self.max_reconnect_attempts = 5  # Maksimal 5 kali percobaan reconnect sebelum fallback ke keyboard
+        self.reconnect_attempts = 0
+        self.last_port_found = None
+        
         try:
-            # Coba semua port COM dari 1-10
+            # Coba ambil port terakhir yang berhasil dari file
+            if os.path.exists("arduino_port.txt"):
+                with open("arduino_port.txt", "r") as f:
+                    saved_port = f.read().strip()
+                    if saved_port:
+                        self.last_port_found = saved_port
+                        print(f"Port Arduino terakhir yang berhasil digunakan: {saved_port}")
+                        try:
+                            # Coba hubungkan ke port yang tersimpan terlebih dahulu
+                            self.button = serial.Serial(
+                                port=saved_port,
+                                baudrate=9600,
+                                bytesize=serial.EIGHTBITS,
+                                parity=serial.PARITY_NONE,
+                                stopbits=serial.STOPBITS_ONE,
+                                timeout=1,
+                                write_timeout=1  # Tambahkan write timeout
+                            )
+                            time.sleep(2)  # Berikan waktu Arduino untuk reset
+                            
+                            # Bersihkan buffer
+                            try:
+                                if self.button.in_waiting:
+                                    self.button.read_all()
+                            except Exception as e:
+                                logger.warning(f"Error membersihkan buffer: {str(e)}")
+                                
+                            # Kirim perintah test
+                            try:
+                                self.button.write(b'test\n')
+                                time.sleep(1)  # Tunggu respons lebih lama
+                                
+                                # Baca respons
+                                if self.button.in_waiting:
+                                    response = self.button.read_all().decode(errors='ignore').strip()
+                                    print(f"Respons dari {saved_port}: {response}")
+                                    if any(signal in response.upper() for signal in ['READY', 'OK', 'ARDUINO']):
+                                        print(f"✅ Arduino terdeteksi di port {saved_port}")
+                                        logging.info(f"Push button Arduino terkoneksi di port {saved_port}")
+                                        self.button_mode = "arduino"
+                                        self.current_port = saved_port
+                                        
+                                        # Simpan port yang berhasil
+                                        with open("arduino_port.txt", "w") as f:
+                                            f.write(saved_port)
+                                            
+                                        return
+                            except Exception as e:
+                                logger.warning(f"Error saat komunikasi dengan port tersimpan: {str(e)}")
+                            
+                            # Jika tidak berhasil, tutup koneksi
+                            if hasattr(self, 'button') and self.button and self.button.is_open:
+                                self.button.close()
+                        except Exception as e:
+                            logger.warning(f"Error mencoba port tersimpan {saved_port}: {str(e)}")
+                            if hasattr(self, 'button') and self.button and self.button.is_open:
+                                self.button.close()
+            
+            # Jika koneksi ke port tersimpan gagal atau tidak ada port tersimpan,
+            # lakukan pencarian di semua port
             for port_num in range(1, 11):
                 port = f'COM{port_num}'
                 try:
@@ -300,31 +366,46 @@ class ParkingCamera:
                         bytesize=serial.EIGHTBITS,
                         parity=serial.PARITY_NONE,
                         stopbits=serial.STOPBITS_ONE,
-                        timeout=1
+                        timeout=1,
+                        write_timeout=1  # Tambahkan write timeout
                     )
                     time.sleep(2)  # Berikan waktu Arduino untuk reset
                     
                     # Bersihkan buffer
-                    while self.button.in_waiting:
-                        self.button.read_all()
+                    try:
+                        if self.button.in_waiting:
+                            self.button.read_all()
+                    except Exception as e:
+                        logger.warning(f"Error membersihkan buffer port {port}: {str(e)}")
+                        continue
                         
                     # Kirim perintah test
-                    self.button.write(b'test\n')
-                    time.sleep(1)  # Tunggu respons lebih lama
-                    
-                    # Baca respons
-                    if self.button.in_waiting:
-                        response = self.button.read_all().decode(errors='ignore').strip()
-                        print(f"Respons dari {port}: {response}")
-                        if any(signal in response.upper() for signal in ['READY', 'OK', 'ARDUINO']):
-                            print(f"✅ Arduino terdeteksi di port {port}")
-                            logging.info(f"Push button Arduino terkoneksi di port {port}")
-                            self.button_mode = "arduino"
-                            self.current_port = port
-                            return
+                    try:
+                        self.button.write(b'test\n')
+                        time.sleep(1)  # Tunggu respons lebih lama
+                        
+                        # Baca respons
+                        if self.button.in_waiting:
+                            response = self.button.read_all().decode(errors='ignore').strip()
+                            print(f"Respons dari {port}: {response}")
+                            if any(signal in response.upper() for signal in ['READY', 'OK', 'ARDUINO']):
+                                print(f"✅ Arduino terdeteksi di port {port}")
+                                logging.info(f"Push button Arduino terkoneksi di port {port}")
+                                self.button_mode = "arduino"
+                                self.current_port = port
+                                self.last_port_found = port
+                                
+                                # Simpan port yang berhasil
+                                with open("arduino_port.txt", "w") as f:
+                                    f.write(port)
+                                    
+                                return
+                    except Exception as e:
+                        logger.warning(f"Error saat komunikasi dengan port {port}: {str(e)}")
                     
                     # Jika tidak ada respons yang valid, tutup port
-                    self.button.close()
+                    if hasattr(self, 'button') and self.button and self.button.is_open:
+                        self.button.close()
                     
                 except serial.SerialException as se:
                     print(f"Port {port} tidak tersedia: {str(se)}")
@@ -352,6 +433,75 @@ class ParkingCamera:
         print("  - Tombol ENTER pada keyboard")
         self.button = None
         self.button_mode = "keyboard"
+
+    def reconnect_arduino(self):
+        """Mencoba menghubungkan kembali ke Arduino jika koneksi terputus"""
+        current_time = time.time()
+        
+        # Cek jika sudah waktunya untuk mencoba reconnect
+        if (current_time - self.last_reconnect_attempt) < self.reconnect_delay:
+            return False
+            
+        # Catat waktu percobaan reconnect
+        self.last_reconnect_attempt = current_time
+        self.reconnect_attempts += 1
+        
+        # Jika sudah melebihi batas percobaan, tetap gunakan keyboard
+        if self.reconnect_attempts > self.max_reconnect_attempts:
+            logger.warning(f"Melebihi batas {self.max_reconnect_attempts} percobaan reconnect. Tetap menggunakan keyboard.")
+            return False
+            
+        logger.info(f"Mencoba reconnect Arduino (Percobaan ke-{self.reconnect_attempts})...")
+        print(f"\n🔄 Mencoba menghubungkan kembali ke Arduino (Percobaan ke-{self.reconnect_attempts})...")
+        
+        # Jika ada port terakhir yang berhasil, coba itu terlebih dahulu
+        if self.last_port_found:
+            try:
+                # Pastikan tidak ada koneksi yang masih terbuka
+                if hasattr(self, 'button') and self.button and self.button.is_open:
+                    self.button.close()
+                    
+                # Buka koneksi baru
+                self.button = serial.Serial(
+                    port=self.last_port_found,
+                    baudrate=9600,
+                    bytesize=serial.EIGHTBITS,
+                    parity=serial.PARITY_NONE,
+                    stopbits=serial.STOPBITS_ONE,
+                    timeout=1,
+                    write_timeout=1
+                )
+                time.sleep(2)  # Berikan waktu Arduino untuk reset
+                
+                # Test koneksi
+                if self.button.is_open:
+                    try:
+                        self.button.write(b'test\n')
+                        time.sleep(1)
+                        
+                        if self.button.in_waiting:
+                            response = self.button.read_all().decode(errors='ignore').strip()
+                            if any(signal in response.upper() for signal in ['READY', 'OK', 'ARDUINO']):
+                                print(f"✅ Reconnect berhasil di port {self.last_port_found}")
+                                logger.info(f"Reconnect Arduino berhasil di port {self.last_port_found}")
+                                self.button_mode = "arduino"
+                                self.current_port = self.last_port_found
+                                self.reconnect_attempts = 0  # Reset counter percobaan
+                                return True
+                    except Exception as e:
+                        logger.warning(f"Error saat test koneksi reconnect: {str(e)}")
+                        
+                # Jika gagal, tutup koneksi
+                if hasattr(self, 'button') and self.button and self.button.is_open:
+                    self.button.close()
+                    
+            except Exception as e:
+                logger.warning(f"Reconnect gagal: {str(e)}")
+                if hasattr(self, 'button') and self.button and self.button.is_open:
+                    self.button.close()
+                    
+        # Jika reconnect gagal, tetap gunakan keyboard
+        return False
 
     def setup_printer(self):
         """Setup printer thermal menggunakan win32print"""
@@ -390,8 +540,14 @@ class ParkingCamera:
             self.printer_available = False
 
     def setup_database(self):
-        """Setup koneksi ke database PostgreSQL"""
+        """Setup koneksi ke database PostgreSQL dengan fitur auto-reconnect"""
         self.db_conn = None
+        self.db_last_connect_attempt = 0
+        self.db_reconnect_delay = 60  # 1 menit antar percobaan
+        self.db_max_retry = 3  # Maksimal 3 kali percobaan
+        self.db_retry_count = 0
+        self.db_config = None
+        
         try:
             # Periksa apakah bagian database ada di config
             if 'database' not in self.config:
@@ -399,23 +555,107 @@ class ParkingCamera:
                 print("ℹ️ Mode tanpa database aktif")
                 return
 
-            db_config = self.config['database']
-            self.db_conn = psycopg2.connect(
-                dbname=db_config['dbname'],
-                user=db_config['user'],
-                password=db_config['password'],
-                host=db_config['host']
-            )
+            self.db_config = self.config['database']
+            self.connect_to_database()
             
-            # Buat tabel jika belum ada
-            self.create_tables()
-            
-            logger.info("Koneksi ke database berhasil")
-            print("✅ Database terkoneksi")
         except Exception as e:
             logger.warning(f"Gagal koneksi ke database: {str(e)}")
             print(f"ℹ️ Mode tanpa database aktif - {str(e)}")
             self.db_conn = None
+    
+    def connect_to_database(self):
+        """Buat koneksi ke database dan tangani error dengan lebih baik"""
+        if not self.db_config:
+            return False
+            
+        try:
+            # Catat waktu percobaan koneksi
+            self.db_last_connect_attempt = time.time()
+            
+            # Buat koneksi dengan timeout
+            self.db_conn = psycopg2.connect(
+                dbname=self.db_config['dbname'],
+                user=self.db_config['user'],
+                password=self.db_config['password'],
+                host=self.db_config['host'],
+                connect_timeout=10  # 10 detik timeout
+            )
+            
+            # Set koneksi untuk auto-commit (opsional)
+            self.db_conn.autocommit = False
+            
+            # Tes koneksi dengan SELECT sederhana
+            cursor = self.db_conn.cursor()
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+            cursor.close()
+            
+            if result and result[0] == 1:
+                # Reset counter retry
+                self.db_retry_count = 0
+                
+                # Buat tabel jika belum ada
+                self.create_tables()
+                
+                logger.info("Koneksi ke database berhasil")
+                print("✅ Database terkoneksi")
+                return True
+            else:
+                raise Exception("Koneksi berhasil tapi test query gagal")
+                
+        except Exception as e:
+            logger.warning(f"Gagal koneksi ke database: {str(e)}")
+            print(f"⚠️ Gagal koneksi ke database: {str(e)}")
+            self.db_conn = None
+            return False
+            
+    def reconnect_database(self):
+        """Coba menghubungkan kembali ke database jika koneksi terputus"""
+        # Jika tidak ada konfigurasi database, jangan coba reconnect
+        if not self.db_config:
+            return False
+            
+        # Cek jika sudah waktunya untuk mencoba reconnect
+        current_time = time.time()
+        if (current_time - self.db_last_connect_attempt) < self.db_reconnect_delay:
+            return False
+            
+        # Jika sudah melebihi jumlah maksimum percobaan
+        if self.db_retry_count >= self.db_max_retry:
+            logger.warning(f"Melebihi batas {self.db_max_retry} percobaan reconnect database")
+            return False
+            
+        # Increment counter dan coba reconnect
+        self.db_retry_count += 1
+        logger.info(f"Mencoba reconnect database (Percobaan ke-{self.db_retry_count})...")
+        print(f"\n🔄 Mencoba menghubungkan kembali ke database (Percobaan ke-{self.db_retry_count})...")
+        
+        # Tutup koneksi lama jika masih ada
+        if self.db_conn:
+            try:
+                self.db_conn.close()
+            except:
+                pass
+            self.db_conn = None
+            
+        # Coba buat koneksi baru
+        return self.connect_to_database()
+        
+    def is_db_connected(self):
+        """Cek apakah koneksi database masih aktif"""
+        if not self.db_conn:
+            return False
+            
+        try:
+            # Test koneksi dengan query sederhana
+            cursor = self.db_conn.cursor()
+            cursor.execute("SELECT 1")
+            result = cursor.fetchone()
+            cursor.close()
+            return result and result[0] == 1
+        except Exception as e:
+            logger.warning(f"Koneksi database terputus: {str(e)}")
+            return False
 
     def create_tables(self):
         """Buat tabel yang diperlukan jika belum ada"""
@@ -599,7 +839,7 @@ class ParkingCamera:
             self.cleanup()
 
     def check_button(self):
-        """Cek status pushbutton dan keyboard dengan debounce"""
+        """Cek status pushbutton dan keyboard dengan debounce dan reconnect otomatis"""
         try:
             current_time = time.time()
             
@@ -621,8 +861,9 @@ class ParkingCamera:
                             try:
                                 self.button.write(b'trigger\n')
                                 logger.info("Trigger command sent to Arduino")
-                            except:
-                                pass
+                            except Exception as e:
+                                logger.error(f"Error mengirim trigger ke Arduino: {str(e)}")
+                                # Tidak perlu langsung reconnect jika hanya error pada pengiriman trigger
                         return True
                     else:
                         remaining = self.debounce_delay - (current_time - self.last_button_press)
@@ -630,8 +871,17 @@ class ParkingCamera:
                         return False
             
             # Cek pushbutton Arduino jika dalam mode arduino
-            if self.button_mode == "arduino" and hasattr(self, 'button') and self.button and self.button.is_open:
+            if self.button_mode == "arduino" and hasattr(self, 'button') and self.button:
                 try:
+                    # Periksa apakah port masih terbuka, jika tidak coba reconnect
+                    if not self.button.is_open:
+                        logger.warning("Port Arduino tidak terbuka, mencoba reconnect...")
+                        if self.reconnect_arduino():
+                            logger.info("Reconnect berhasil, lanjutkan operasi normal")
+                        else:
+                            return False
+                    
+                    # Baca data dari Arduino
                     if self.button.in_waiting:
                         data = self.button.read_all().decode(errors='ignore').strip()
                         print(f"Data dari Arduino: {data}")  # Debug print
@@ -653,10 +903,38 @@ class ParkingCamera:
                                 self.button.reset_input_buffer()
                                 return False
                                 
+                except serial.SerialException as se:
+                    # Error spesifik SerialException biasanya menandakan masalah koneksi
+                    logger.error(f"Serial error dengan Arduino: {str(se)}")
+                    print(f"\n⚠️ Masalah koneksi Arduino: {str(se)}")
+                    
+                    # Coba reconnect
+                    if self.reconnect_arduino():
+                        logger.info("Reconnect berhasil setelah serial exception")
+                        return False  # Kembalikan False untuk skip proses saat ini
+                    else:
+                        # Jika reconnect gagal, beralih ke mode keyboard
+                        print("⚠️ Gagal reconnect, beralih ke mode keyboard")
+                        self.button_mode = "keyboard"
+                        if hasattr(self, 'button') and self.button and self.button.is_open:
+                            try:
+                                self.button.close()
+                            except:
+                                pass
+                        self.button = None
+                        return False
+                        
                 except Exception as e:
-                    logger.error(f"Error membaca Arduino: {str(e)}")
-                    # Switch ke mode keyboard jika ada error
+                    logger.error(f"Error umum membaca Arduino: {str(e)}")
                     print(f"\n⚠️ Error pada Arduino: {str(e)}")
+                    
+                    # Hanya coba reconnect untuk error koneksi atau timeout
+                    if "timeout" in str(e).lower() or "connection" in str(e).lower() or "i/o" in str(e).lower():
+                        if self.reconnect_arduino():
+                            logger.info("Reconnect berhasil setelah error umum")
+                            return False
+                    
+                    # Untuk error lain yang lebih serius, beralih ke mode keyboard
                     print("⚠️ Beralih ke mode keyboard")
                     self.button_mode = "keyboard"
                     if hasattr(self, 'button') and self.button:
@@ -765,12 +1043,19 @@ class ParkingCamera:
             logger.error(f"Error saving counter: {str(e)}")
 
     def save_to_database(self, ticket_number, image_path):
-        """Simpan data tiket ke database"""
-        if not self.db_conn:
+        """Simpan data tiket ke database dengan auto-reconnect"""
+        if not self.db_config:
             print("ℹ️ Mode tanpa database aktif")
             return
             
         try:
+            # Periksa apakah koneksi masih aktif
+            if not self.is_db_connected():
+                print("⚠️ Koneksi database terputus, mencoba reconnect...")
+                if not self.reconnect_database():
+                    print("❌ Gagal reconnect ke database, tiket tidak disimpan")
+                    return
+            
             cursor = self.db_conn.cursor()
             
             # Buat query insert
@@ -796,11 +1081,35 @@ class ParkingCamera:
             print("✅ Data tiket berhasil disimpan ke database")
             logger.info(f"Tiket {ticket_number} berhasil disimpan ke database")
             
+        except psycopg2.OperationalError as oe:
+            # Error koneksi, coba reconnect
+            logger.error(f"Database operational error: {str(oe)}")
+            print(f"⚠️ Database operational error: {str(oe)}")
+            
+            if self.reconnect_database():
+                # Jika reconnect berhasil, coba simpan lagi
+                print("✅ Reconnect berhasil, mencoba simpan data lagi...")
+                try:
+                    self.save_to_database(ticket_number, image_path)
+                except Exception as e2:
+                    logger.error(f"Gagal simpan data setelah reconnect: {str(e2)}")
+                    print(f"❌ Gagal simpan data setelah reconnect: {str(e2)}")
+            else:
+                print("❌ Gagal reconnect ke database, tiket tidak disimpan")
+                if self.db_conn:
+                    try:
+                        self.db_conn.rollback()
+                    except:
+                        pass
+        
         except Exception as e:
             print(f"⚠️ Gagal menyimpan ke database: {str(e)}")
             logger.error(f"Database error: {str(e)}")
             if self.db_conn:
-                self.db_conn.rollback()
+                try:
+                    self.db_conn.rollback()
+                except:
+                    pass
 
 if __name__ == "__main__":
     try:
